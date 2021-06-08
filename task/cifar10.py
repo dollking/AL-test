@@ -13,7 +13,7 @@ from tensorboardX import SummaryWriter
 
 from .graph.resnet import ResNet18 as Model
 from .graph.resnet import Loss
-from .dataset.classification import DatasetCifar10
+from .dataset.classification import ClassificationDataset
 
 from utils.metrics import AverageMeter
 from utils.train_utils import set_logger, count_model_prameters
