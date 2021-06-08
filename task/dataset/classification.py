@@ -24,4 +24,4 @@ class ClassificationDataset(Dataset):
                                  self.config.data_name, self.data_list[idx].strip() + '.npz')
         data = np.load(file_path)
 
-        return {'X': data['img'], 'target': data['label']}
+        return {'X': torch.from_numpy(data['img']), 'target': torch.from_numpy(data['label'])}
