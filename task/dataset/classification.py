@@ -24,4 +24,4 @@ class ClassificationDataset(Dataset):
                                  self.config.data_name, self.data_list[idx].strip() + '.npz')
         data = np.load(file_path)
 
-        return {'X': data['img'], 'target': data['lable']}
+        return {'X': data['img'], 'target': data['label']}
