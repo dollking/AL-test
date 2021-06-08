@@ -89,7 +89,7 @@ class Cifar10(object):
         print('Number of generator parameters: {}'.format(count_model_prameters(self.model)))
 
     def collate_function(self, samples):
-        X = torch.cat([sample['X'] for sample in samples], axis=0)
+        X = torch.cat([sample['X'].view(-1, 3, 32, 32) for sample in samples], axis=0)
         target = torch.cat([sample['target'] for sample in samples], axis=0)
 
         return tuple([X, target])
