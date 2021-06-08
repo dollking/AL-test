@@ -80,7 +80,7 @@ class Cifar10(object):
             self.load_checkpoint(self.config.checkpoint_file)
 
         # Summary Writer
-        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_dir),
+        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
                                             comment=f'cifar10_step_{self.step_cnt}')
         self.print_train_info()
 
