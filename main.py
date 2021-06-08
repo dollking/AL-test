@@ -16,6 +16,7 @@ if __name__ == '__main__':
         task = Task(config, manager, step_cnt + 1)
         task.run()
 
+        print('step {}: test accuracy - {}'.format(step_cnt + 1, task.best_acc))
         fp.write(f'{task.best_acc}\n')
 
         new_list = query.select_data()
