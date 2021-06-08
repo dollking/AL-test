@@ -37,11 +37,11 @@ class Cifar10(object):
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        self.dataset = DatasetCifar10(self.config, self.transform, self.data_manager.opened)
+        self.dataset = ClassificationDataset(self.config, self.transform, self.data_manager.opened)
         self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,
                                      pin_memory=self.config.pin_memory, collate_fn=self.collate_function)
 
-        self.dataset_test = DatasetCifar10(self.config, self.transform, self.data_manager.test_pool)
+        self.dataset_test = ClassificationDataset(self.config, self.transform, self.data_manager.test_pool)
         self.testloader = DataLoader(self.dataset_test, batch_size=self.batch_size, shuffle=False, num_workers=1,
                                      pin_memory=self.config.pin_memory, collate_fn=self.collate_function)
 
