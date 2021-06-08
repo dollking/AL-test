@@ -10,10 +10,15 @@ if __name__ == '__main__':
     manager = DataManager(config)
     query = Query(manager.closed, config)
 
+    fp = open('record.txt', 'w')
     for step_cnt in range(config.max_cycle):
         print('step {}: train data count - {}'.format(step_cnt + 1, len(manager.opened)))
         task = Task(config, manager, step_cnt + 1)
         task.run()
 
+        fp.write(f'{task.best_acc}\n')
+
         new_list = query.select_data()
         manager.open_data(new_list)
+
+    fp.close()

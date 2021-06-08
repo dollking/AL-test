@@ -26,6 +26,7 @@ class Cifar10(object):
         self.config = config
         self.data_manager = data_manager
         self.step_cnt = step_cnt
+        self.best_acc = 0.0
 
         self.transform = transforms.Compose([
             transforms.ToTensor(),
@@ -62,8 +63,6 @@ class Cifar10(object):
 
         # initialize train counter
         self.epoch = 0
-        self.accumulate_iter = 0
-        self.total_iter = (len(self.dataset) + self.config.batch_size - 1) // self.config.batch_size
 
         self.manual_seed = random.randint(10000, 99999)
 
@@ -129,10 +128,10 @@ class Cifar10(object):
             self.epoch += 1
             self.train_by_epoch()
 
-            self.save_checkpoint()
-
     def train_by_epoch(self):
-        tqdm_batch = tqdm(self.dataloader, total=self.total_iter, desc="epoch-{}".format(self.epoch))
+        tqdm_batch = tqdm(self.dataloader,
+                          total=(len(self.dataset) + self.config.batch_size - 1) // self.config.batch_size,
+                          desc="epoch-{}".format(self.epoch))
 
         avg_loss = AverageMeter()
         for curr_it, (X, target) in enumerate(tqdm_batch):
@@ -160,19 +159,27 @@ class Cifar10(object):
                               total=(len(self.dataset_test) + self.config.batch_size - 1) // self.config.batch_size,
                               desc="epoch-{}".format(self.epoch))
 
+            total = 0
+            correct = 0
             avg_loss = AverageMeter()
             for curr_it, (X, target) in enumerate(tqdm_batch):
                 self.model.eval()
 
                 X = X.cuda(async=self.config.async_loading)
                 target = target.cuda(async=self.config.async_loading)
-
                 logit = self.model(X)
-
                 loss = self.loss(logit, target, 10)
+
+                _, predicted = torch.max(logit.data, 1)
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
 
                 avg_loss.update(loss)
 
             tqdm_batch.close()
 
             self.summary_writer.add_scalar('eval/loss', avg_loss.val, self.epoch)
+
+            if correct / total > self.best_acc:
+                self.best_acc = correct / total
+                self.save_checkpoint()
