@@ -5,6 +5,7 @@ class Config(object):
     root_path = ''
     data_directory = ''
     summary_directory = ''
+    checkpoint_directory = ''
 
     gpu_cnt = 4
 

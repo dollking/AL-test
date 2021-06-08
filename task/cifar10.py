@@ -77,7 +77,7 @@ class Cifar10(object):
 
         # Model Loading from the latest checkpoint if not found start from scratch.
         if is_continue:
-            self.load_checkpoint(self.config.checkpoint_file)
+            self.load_checkpoint()
 
         # Summary Writer
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
@@ -94,8 +94,9 @@ class Cifar10(object):
 
         return tuple([X, target])
 
-    def load_checkpoint(self, file_name):
-        filename = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
+    def load_checkpoint(self):
+        filename = os.path.join(self.config.root_path, self.config.checkpoint_directory,
+                                '{}_step_{}.pth.tar'.format(self.config.data_name, self.step_cnt-1))
         try:
             print("Loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)
@@ -106,17 +107,15 @@ class Cifar10(object):
             print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
             print("**First time to train**")
 
-    def save_checkpoint(self, epoch):
-        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir,
-                                'checkpoint_{}.pth.tar'.format(epoch))
+    def save_checkpoint(self):
+        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_directory,
+                                '{}_step_{}.pth.tar'.format(self.config.data_name, self.step_cnt))
 
         state = {
             'model_state_dict': self.model.state_dict(),
         }
 
         torch.save(state, tmp_name)
-        shutil.copyfile(tmp_name, os.path.join(self.config.root_path, self.config.checkpoint_dir,
-                                               self.config.checkpoint_file))
 
     def run(self):
         try:
@@ -125,25 +124,12 @@ class Cifar10(object):
         except KeyboardInterrupt:
             print("You have entered CTRL+C.. Wait to finalize")
 
-    def record_image(self, X, out, target, step='train'):
-        self.summary_writer.add_image(step + '/img 1', X[0], self.epoch)
-        self.summary_writer.add_image(step + '/img 2', X[1], self.epoch)
-        self.summary_writer.add_image(step + '/img 3', X[2], self.epoch)
-
-        self.summary_writer.add_image(step + '/result 1', out[0], self.epoch)
-        self.summary_writer.add_image(step + '/result 2', out[1], self.epoch)
-        self.summary_writer.add_image(step + '/result 3', out[2], self.epoch)
-
-        self.summary_writer.add_image(step + '/target 1', target[0], self.epoch)
-        self.summary_writer.add_image(step + '/target 2', target[1], self.epoch)
-        self.summary_writer.add_image(step + '/target 3', target[2], self.epoch)
-
     def train(self):
         for _ in range(self.config.epoch):
             self.epoch += 1
             self.train_by_epoch()
 
-            self.save_checkpoint(self.config.checkpoint_file)
+            self.save_checkpoint()
 
     def train_by_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.total_iter, desc="epoch-{}".format(self.epoch))
