@@ -17,4 +17,4 @@ class Config(object):
 
     budge_size = 10
     budge_max = 10000
-    max_cycle = budge_max / budge_size
+    max_cycle = int(budge_max / budge_size)
