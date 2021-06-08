@@ -4,8 +4,8 @@ import random
 
 class DataManager(object):
     def __init__(self, config):
-        self.train_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'train_list.txt')
-        self.test_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'test_list.txt')
+        self.train_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'_train_list.txt')
+        self.test_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'_test_list.txt')
         self.initial_size = config.initial_size
         self.budget_size = config.budge_size
         self.budget_max = config.budge_max
