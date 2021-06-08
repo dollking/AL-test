@@ -23,5 +23,6 @@ class ClassificationDataset(Dataset):
         file_path = os.path.join(self.root_path, self.config.data_directory,
                                  self.config.data_name, self.data_list[idx].strip() + '.npz')
         data = np.load(file_path)
+        img = self.transform(data['img'])
 
-        return {'X': torch.from_numpy(data['img']), 'target': torch.from_numpy(data['label'])}
+        return {'X': img, 'target': torch.from_numpy(data['label'])}
