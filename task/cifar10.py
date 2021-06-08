@@ -144,7 +144,7 @@ class Cifar10(object):
 
             logit = self.model(X)
 
-            loss = self.loss(logit, target)
+            loss = self.loss(logit, target, 10)
 
             loss.backward()
             self.opt.step()

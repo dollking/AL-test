@@ -78,7 +78,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.linear = nn.Linear(512*block.expansion, num_classes)
 
-        self.avg_pool = nn.AdaptiveAvgPool2d(512*block.expansion)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
         self.relu = nn.ReLU(inplace=True)
 
