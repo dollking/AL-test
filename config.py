@@ -1,6 +1,10 @@
 
 class Config(object):
     data_name = ''
+    initial_size = 100
+    budge_size = 10
+    budge_max = 1000
+    max_cycle = int(budge_max / budge_size)
 
     root_path = ''
     data_directory = ''
@@ -14,7 +18,3 @@ class Config(object):
     learning_rate = 0.001
 
     pin_memory = True
-
-    budge_size = 10
-    budge_max = 10000
-    max_cycle = int(budge_max / budge_size)

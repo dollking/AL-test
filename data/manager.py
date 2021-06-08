@@ -6,6 +6,7 @@ class DataManager(object):
     def __init__(self, config):
         self.train_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'train_list.txt')
         self.test_data_path = os.path.join(config.root_path, config.data_directory, config.data_name+'test_list.txt')
+        self.initial_size = config.initial_size
         self.budget_size = config.budge_size
         self.budget_max = config.budge_max
 
@@ -15,6 +16,8 @@ class DataManager(object):
         self.closed = []  # non-selected train data list
         self.opened = []    # selected train data list
 
+        self.set_data_list()
+
     def set_data_list(self):
         with open(self.train_data_path) as fp:
             self.data_pool = fp.readlines()
@@ -23,8 +26,11 @@ class DataManager(object):
             self.test_pool = fp.readlines()
 
         random.shuffle(self.data_pool)
+        self.opened += self.data_pool[:self.initial_size]
         self.closed = self.data_pool[:self.budget_max]
         self.data_pool = self.test_pool
+
+
 
     def open_data(self, lst):
         self.opened += lst
