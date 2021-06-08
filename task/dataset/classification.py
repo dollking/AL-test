@@ -21,7 +21,7 @@ class ClassificationDataset(Dataset):
             idx = idx.tolist()
 
         file_path = os.path.join(self.root_path, self.config.data_directory,
-                                 self.config.data_name, self.data_list[idx]+'.npz')
+                                 self.config.data_name, self.data_list[idx].strip() + '.npz')
         data = np.load(file_path)
 
         return {'X': data['img'], 'target': data['lable']}
