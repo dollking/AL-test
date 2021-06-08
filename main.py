@@ -12,5 +12,4 @@ if __name__ == '__main__':
 
     for step_cnt in range(config.max_cycle):
         task = Task(config, manager, step_cnt + 1)
-
-
+        task.run()
