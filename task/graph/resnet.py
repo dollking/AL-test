@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -131,5 +132,4 @@ class Loss(nn.Module):
         self.loss = nn.CrossEntropyLoss()
 
     def forward(self, logit, target, num_classes):
-        target = nn.functional.one_hot(target, num_classes)
-        return self.loss(logit, target)
+        return self.loss(logit, target.to(torch.int64))
