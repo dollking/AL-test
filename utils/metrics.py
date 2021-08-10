@@ -1,4 +1,6 @@
+import torch
 import numpy as np
+
 
 def _fast_hist(label_pred, label_true, num_classes):
     mask = (label_true >= 0) & (label_true < num_classes)
@@ -77,15 +79,13 @@ class AverageMeterList:
 
 class UncertaintyScore(object):
     def __call__(self, vectors):
-        _max = np.max(vectors, axis=0)
-        var = np.var(vectors, axis=0)
+        cls_size = vectors.size(1)
+        _max = torch.max(vectors, dim=0)
+        var = torch.var(vectors, dim=0)
 
         var_lst = []
         for m in _max:
-            tmp = (1. - m) / (vectors.size(1) - 1)
-            tmp_lst = [tmp for _ in range(vectors.size(1))]
-            tmp_lst[0] = m
-            var_lst.append(np.var(tmp_lst))
+            var_lst.append(((1 - m) ** 2 + 4 * (((1 / cls_size) - ((1 - m) / (cls_size - 1))) ** 2)) / cls_size)
 
         min_var = np.array(var_lst)
 
