@@ -11,7 +11,7 @@ class Config(object):
     summary_directory = 'board'
     checkpoint_directory = 'trained'
 
-    gpu_cnt = 4
+    gpu_cnt = 1
 
     epoch = 500
     batch_size = 16
