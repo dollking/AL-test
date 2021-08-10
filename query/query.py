@@ -46,9 +46,6 @@ class Query(object):
         gpu_list = list(range(self.config.gpu_cnt))
         self.vae = nn.DataParallel(self.vae, device_ids=gpu_list)
 
-        # Model Loading from the latest checkpoint if not found start from scratch.
-        self.load_checkpoint()
-
     def load_checkpoint(self):
         filename = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'vae.pth.tar')
 
@@ -67,6 +64,8 @@ class Query(object):
             return False
 
     def sampling(self):
+        self.load_checkpoint()
+
         dataloader = DataLoader(self.cifar10_train, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
 
