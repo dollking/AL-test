@@ -58,7 +58,7 @@ class Query(object):
             return True
 
         except OSError as e:
-            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
+            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
             print("**First time to train**")
 
             return False

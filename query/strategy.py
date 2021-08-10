@@ -108,7 +108,7 @@ class Strategy(object):
             self.task.load_state_dict(checkpoint['task_state_dict'])
 
         except OSError as e:
-            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
+            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
             print("**First time to train**")
 
     def save_checkpoint(self):
