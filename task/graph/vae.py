@@ -1,3 +1,4 @@
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -92,7 +93,7 @@ class VectorQuantizerEMA(nn.Module):
         # Loss
         e_latent_loss = F.mse_loss(quantized.detach(), inputs)
         loss = self._commitment_cost * e_latent_loss
-
+        
         # Straight Through Estimator
         quantized = inputs + (quantized - inputs).detach()
         avg_probs = torch.mean(encodings, dim=0)
@@ -122,6 +123,8 @@ class Encoder(nn.Module):
                                              num_hiddens=num_hiddens,
                                              num_residual_layers=num_residual_layers,
                                              num_residual_hiddens=num_residual_hiddens)
+        
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, inputs):
         x = self._conv_1(inputs)
@@ -131,17 +134,22 @@ class Encoder(nn.Module):
         x = F.relu(x)
 
         x = self._conv_3(x)
-        return self._residual_stack(x)
+
+        out = self._residual_stack(x)
+
+        out = self.avg_pool(out)
+
+        return out
 
 
 class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens, num_residual_layers, num_residual_hiddens):
         super(Decoder, self).__init__()
 
-        self._conv_1 = nn.Conv2d(in_channels=in_channels,
+        self._conv_1 = nn.ConvTranspose2d(in_channels=in_channels,
                                  out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=1, padding=1)
+                                 kernel_size=8,
+                                 stride=8)
 
         self._residual_stack = ResidualStack(in_channels=num_hiddens,
                                              num_hiddens=num_hiddens,
@@ -185,7 +193,7 @@ class VAE(nn.Module):
         self._vq_vae = VectorQuantizerEMA(num_embeddings, embedding_dim,
                                           commitment_cost, decay)
 
-        self._decoder = Decoder(embedding_dim,
+        self._decoder = Decoder(embedding_dim * 2,
                                 num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
@@ -195,9 +203,21 @@ class VAE(nn.Module):
         z = self._pre_vq_conv(z)
 
         loss, quantized, perplexity, _ = self._vq_vae(z)
-
+        
         decoder_in = torch.cat([z, quantized], dim=1)
 
         x_recon = self._decoder(decoder_in)
-
-        return loss, x_recon, perplexity
+        
+        cnt = 0
+        distance_loss = 0.
+        lst = [i for i in range(100)]
+        s_lst = [i for i in range(100)]
+        random.shuffle(s_lst)
+        for idx in range(100):
+            if lst[idx] != s_lst[idx]:
+                cnt += 1
+                distance_loss += torch.abs(torch.sum((self._vq_vae._embedding.weight[lst[idx]] -
+                                                      self._vq_vae._embedding.weight[s_lst[idx]]) ** 2) - 1.) * 0.5
+        distance_loss /= cnt
+        
+        return loss + distance_loss, x_recon, perplexity
