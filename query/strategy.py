@@ -16,7 +16,6 @@ from tensorboardX import SummaryWriter
 from .graph.resnet import ResNet18 as resnet
 from .graph.vae import VAE as vae
 from .graph.resnet import Loss
-from .sampler import Sampler
 
 from utils.metrics import AverageMeter, UncertaintyScore
 from utils.train_utils import set_logger, count_model_prameters
