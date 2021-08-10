@@ -73,3 +73,20 @@ class AverageMeterList:
     @property
     def val(self):
         return self.avg
+
+
+class UncertaintyScore(object):
+    def __call__(self, vectors):
+        _max = np.max(vectors, axis=0)
+        var = np.var(vectors, axis=0)
+
+        var_lst = []
+        for m in _max:
+            tmp = (1. - m) / (vectors.size(1) - 1)
+            tmp_lst = [tmp for _ in range(vectors.size(1))]
+            tmp_lst[0] = m
+            var_lst.append(np.var(tmp_lst))
+
+        min_var = np.array(var_lst)
+
+        return 1 - (min_var * _max / var)

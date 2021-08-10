@@ -9,13 +9,35 @@ class Config(object):
     root_path = '/home/D2019063/Active_Learning/'
     data_directory = 'data'
     summary_directory = 'board'
-    checkpoint_directory = 'model'
+    checkpoint_directory = 'trained'
 
     gpu_cnt = 4
 
     epoch = 500
     batch_size = 16
-    learning_rate = 0.001
+
+    learning_rate = 0.1
+    momentum = 0.9
+    wdecay = 5e-4
 
     pin_memory = True
     async_loading = True
+
+    #############################################
+    vae_batch_size = 512
+    vae_epoch = 2000
+
+    vae_num_hiddens = 128
+    vae_num_residual_hiddens = 32
+    vae_num_residual_layers = 2
+
+    vae_embedding_dim = 64
+    vae_num_embeddings = 100
+
+    vae_commitment_cost = 0.25
+
+    vae_decay = 0.99
+
+    vae_distance = 2.
+
+    vae_learning_rate = 1e-3
