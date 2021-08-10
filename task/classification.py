@@ -51,7 +51,7 @@ class Classification(object):
         self.train_loader = DataLoader(self.cifar10_train, batch_size=self.batch_size, num_workers=2,
                                        pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         self.test_loader = DataLoader(self.cifar10_test, batch_size=self.batch_size, num_workers=1,
-                                      pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
+                                      pin_memory=self.config.pin_memory)
 
         # define models
         self.task = resnet().cuda()
