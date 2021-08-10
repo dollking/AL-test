@@ -33,7 +33,8 @@ class Query(object):
         self.batch_size = self.config.vae_batch_size
 
         # define dataloader
-        self.cifar10_train = CIFAR10('data/cifar10', train=True, download=True, transform=self.train_transform)
+        self.cifar10_train = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                     train=True, download=True, transform=self.train_transform)
 
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,

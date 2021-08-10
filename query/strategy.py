@@ -46,8 +46,10 @@ class Strategy(object):
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        self.cifar10_train = CIFAR10('data/cifar10', train=True, download=True, transform=self.train_transform)
-        self.cifar10_test = CIFAR10('data/cifar10', train=False, download=True, transform=self.test_transform)
+        self.cifar10_train = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                     train=True, download=True, transform=self.train_transform)
+        self.cifar10_test = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                    train=False, download=True, transform=self.test_transform)
 
         self.train_loader = DataLoader(self.cifar10_train, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
