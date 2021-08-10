@@ -83,10 +83,6 @@ class UncertaintyScore(object):
         _max = torch.max(vectors, dim=0)
         var = torch.var(vectors, dim=0)
 
-        var_lst = []
-        for m in _max:
-            var_lst.append(((1 - m) ** 2 + 4 * (((1 / cls_size) - ((1 - m) / (cls_size - 1))) ** 2)) / cls_size)
-
-        min_var = np.array(var_lst)
+        min_var = ((1 - _max) ** 2 + 4 * (((1 / cls_size) - ((1 - _max) / (cls_size - 1))) ** 2)) / cls_size
 
         return 1 - (min_var * _max / var)
