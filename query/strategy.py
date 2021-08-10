@@ -145,7 +145,7 @@ class Strategy(object):
 
             task_output = self.task(data)
             u_score = self.uncertainty_score(task_output)
-            vq_loss, data_recon, perplexity, distance = self.vae(data, u_score)
+            vq_loss, data_recon, perplexity, distance = self.vae(data)
 
             recon_error = self.loss(data_recon, data)
             loss = recon_error + vq_loss
@@ -175,10 +175,12 @@ class Strategy(object):
 
                 task_output = self.task(data)
                 u_score = self.uncertainty_score(task_output)
-                vq_loss, data_recon, perplexity = self.vae(data, u_score)
+                vq_loss, data_recon, perplexity, distance = self.vae(data)
 
                 recon_error = self.loss(data_recon, data)
                 loss = recon_error + vq_loss
+                if self.step_cnt:  # distance loss
+                    loss += torch.mean(torch.abs(u_score - distance / self.config.vae_distance))
 
                 avg_loss.update(loss)
 

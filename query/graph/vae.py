@@ -200,13 +200,13 @@ class VAE(nn.Module):
                                 num_residual_layers,
                                 num_residual_hiddens)
 
-    def forward(self, x, uncertainty_score=None, is_train=True):
+    def forward(self, x, is_train=True):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
 
         loss, quantized, perplexity, _ = self._vq_vae(z)
 
-        distance = torch.sqrt((quantized - z) ** 2) if uncertainty_score else 0
+        distance = torch.sqrt((quantized - z) ** 2)
 
         if not is_train:
             return quantized, z, distance

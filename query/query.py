@@ -75,7 +75,7 @@ class Query(object):
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
-            quantized, z, distance = self.vae(data, is_train=False)
+            quantized, z, distance = self.vae(data, False)
 
             for idx in range(quantized.size(0)):
                 if quantized[idx] in data_dict:
