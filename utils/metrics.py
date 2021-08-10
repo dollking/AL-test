@@ -78,11 +78,15 @@ class AverageMeterList:
 
 
 class UncertaintyScore(object):
+    def __init__(self):
+        self.softmax = torch.nn.Softmax()
+        
     def __call__(self, vectors):
         cls_size = vectors.size(1)
-        _max = torch.max(vectors, dim=0)
-        var = torch.var(vectors, dim=0)
-
+        vectors = self.softmax(vectors)
+        
+        _max = torch.max(vectors, dim=1).values
+        var = torch.var(vectors, dim=1)
         min_var = ((1 - _max) ** 2 + 4 * (((1 / cls_size) - ((1 - _max) / (cls_size - 1))) ** 2)) / cls_size
-
+        
         return 1 - (min_var * _max / var)
