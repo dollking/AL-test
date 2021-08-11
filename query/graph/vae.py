@@ -32,7 +32,7 @@ class ResidualStack(nn.Module):
     def forward(self, x):
         for i in range(self._num_residual_layers):
             x = self._layers[i](x)
-        return F.relu(x)
+        return x
 
 
 class VectorQuantizerEMA(nn.Module):
@@ -100,7 +100,7 @@ class VectorQuantizerEMA(nn.Module):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encodings
+        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view([inputs.size(0),])
 
 
 class Encoder(nn.Module):
@@ -205,13 +205,13 @@ class VAE(nn.Module):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
 
-        loss, quantized, perplexity, _ = self._vq_vae(z)
+        loss, quantized, perplexity, encoding_indices = self._vq_vae(z)
 
-        distance = torch.sqrt((quantized - z) ** 2)
-
+        distance = ((quantized - z) ** 2).view([-1, self.embedding_dim])
+        distance = torch.sqrt(torch.sum(distance, axis=1))
+        
         if not is_train:
-            return quantized.view([-1, self.embedding_dim]), z.view([-1, self.embedding_dim]),\
-                   distance.view([-1, self.embedding_dim])
+            return encoding_indices, distance
         
         decoder_in = torch.cat([z, quantized], dim=1)
 
@@ -230,4 +230,4 @@ class VAE(nn.Module):
                                            - self.max_distance)
         centroid_loss /= cnt
 
-        return loss + centroid_loss, x_recon, perplexity, distance.view([-1, self.embedding_dim])
+        return loss + centroid_loss, x_recon, perplexity, distance
