@@ -18,12 +18,12 @@ cudnn.benchmark = True
 
 
 class Query(object):
-    def __init__(self, config, data_size):
+    def __init__(self, config):
         self.config = config
 
         self.budget = self.config.budge_size
         self.labeled = []
-        self.unlabeled = [i for i in range(data_size)]
+        self.unlabeled = [i for i in range(self.config.data_size)]
 
         self.train_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -33,8 +33,9 @@ class Query(object):
         self.batch_size = self.config.vae_batch_size
 
         # define dataloader
-        self.cifar10_train = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                     train=True, download=True, transform=self.train_transform)
+        if self.config.data_name == 'cifar10':
+            self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                   train=True, download=True, transform=self.train_transform)
 
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
@@ -66,7 +67,7 @@ class Query(object):
     def sampling(self):
         self.load_checkpoint()
 
-        dataloader = DataLoader(self.cifar10_train, batch_size=self.batch_size,
+        dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
         tqdm_batch = tqdm(dataloader, total=len(dataloader))
         
@@ -89,7 +90,7 @@ class Query(object):
                     global_index += 1
 
             tqdm_batch.close()
-        print(set(data_dict.keys()))
+
         subset = []
         total_remain = []
         quota = int(self.budget / len(data_dict))

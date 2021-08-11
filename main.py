@@ -8,8 +8,9 @@ from config import Config
 
 if __name__ == '__main__':
     config = Config()
-    query = Query(config, 50000)
+    query = Query(config)
 
+    fp = open('record.txt', 'w')
     for step_cnt in range(config.max_cycle):
         # train a sampling strategy
         torch.cuda.empty_cache()
@@ -28,3 +29,7 @@ if __name__ == '__main__':
         task.run()
 
         print('step {}: test accuracy - {}'.format(step_cnt + 1, task.best_acc))
+
+        fp.write(f'{task.best_acc}\n')
+
+    fp.close()

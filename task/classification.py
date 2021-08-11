@@ -9,8 +9,6 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
-from tensorboardX import SummaryWriter
-
 from .graph.resnet import ResNet18 as resnet
 from .graph.loss import CELoss as Loss
 from data.sampler import Sampler
@@ -44,14 +42,15 @@ class Classification(object):
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        self.cifar10_train = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                     train=True, download=True, transform=self.train_transform)
-        self.cifar10_test = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                    train=False, download=True, transform=self.test_transform)
+        if self.config.data_name == 'cifar10':
+            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                         train=True, download=True, transform=self.train_transform)
+            self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                        train=False, download=True, transform=self.test_transform)
         
-        self.train_loader = DataLoader(self.cifar10_train, batch_size=self.batch_size, num_workers=2,
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
                                        pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
-        self.test_loader = DataLoader(self.cifar10_test, batch_size=self.batch_size, num_workers=1,
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=1,
                                       pin_memory=self.config.pin_memory)
 
         # define models
@@ -81,9 +80,6 @@ class Classification(object):
         gpu_list = list(range(self.config.gpu_cnt))
         self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
-        # Summary Writer
-        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
-                                            comment=f'cifar10_step_{self.step_cnt}')
         self.print_train_info()
 
     def print_train_info(self):

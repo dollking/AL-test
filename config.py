@@ -1,9 +1,11 @@
 
 class Config(object):
     data_name = 'cifar10'
-    initial_size = 100
+    data_size = 50000
+
     budge_size = 1000
     budge_max = 10000
+
     max_cycle = int(budge_max / budge_size)
 
     root_path = '/home/D2019063/Active_Learning/'

@@ -1,17 +1,13 @@
 import os
-import shutil
 import random
 from tqdm import tqdm
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
-
-from tensorboardX import SummaryWriter
 
 from .graph.vae import VAE as vae
 from .graph.loss import MSE as Loss
@@ -46,14 +42,15 @@ class Strategy(object):
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        self.cifar10_train = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                     train=True, download=True, transform=self.train_transform)
-        self.cifar10_test = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                    train=False, download=True, transform=self.test_transform)
+        if self.config.data_name == 'cifar10':
+            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                         train=True, download=True, transform=self.train_transform)
+            self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                        train=False, download=True, transform=self.test_transform)
 
-        self.train_loader = DataLoader(self.cifar10_train, batch_size=self.batch_size, shuffle=True, num_workers=2,
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
-        self.test_loader = DataLoader(self.cifar10_test, batch_size=self.batch_size, shuffle=True, num_workers=1,
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True, num_workers=1,
                                       pin_memory=self.config.pin_memory)
 
         self.uncertainty_score = UncertaintyScore()
