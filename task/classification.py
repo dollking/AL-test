@@ -48,6 +48,7 @@ class Classification(object):
                                      train=True, download=True, transform=self.train_transform)
         self.cifar10_test = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                     train=False, download=True, transform=self.test_transform)
+        
         self.train_loader = DataLoader(self.cifar10_train, batch_size=self.batch_size, num_workers=2,
                                        pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         self.test_loader = DataLoader(self.cifar10_test, batch_size=self.batch_size, num_workers=1,
@@ -64,7 +65,8 @@ class Classification(object):
                                         momentum=self.config.momentum, weight_decay=self.config.wdecay)
 
         # define optimize scheduler
-        self.task_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.task, mode='min', factor=0.8, cooldown=8)
+        self.task_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.task_opt, mode='min',
+                                                                         factor=0.8, cooldown=8)
 
         # initialize train counter
         self.epoch = 0
@@ -77,7 +79,7 @@ class Classification(object):
 
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
-        self.model = nn.DataParallel(self.model, device_ids=gpu_list)
+        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
         # Summary Writer
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
@@ -86,13 +88,13 @@ class Classification(object):
 
     def print_train_info(self):
         print("seed: ", self.manual_seed)
-        print('Number of generator parameters: {}'.format(count_model_prameters(self.model)))
+        print('Number of generator parameters: {}'.format(count_model_prameters(self.task)))
 
     def save_checkpoint(self):
         tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'task.pth.tar')
 
         state = {
-            'task_state_dict': self.model.state_dict(),
+            'task_state_dict': self.task.state_dict(),
         }
 
         torch.save(state, tmp_name)
@@ -110,7 +112,7 @@ class Classification(object):
             self.train_by_epoch()
 
     def train_by_epoch(self):
-        tqdm_batch = tqdm(self.train_loader, total=len(self.train_loader))
+        tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
 
         avg_loss = AverageMeter()
         for curr_it, data in enumerate(tqdm_batch):
@@ -133,7 +135,7 @@ class Classification(object):
         self.task_scheduler.step(avg_loss.val)
 
         with torch.no_grad():
-            tqdm_batch = tqdm(self.test_loader, total=len(self.test_loader))
+            tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
 
             total = 0
             correct = 0
@@ -143,6 +145,7 @@ class Classification(object):
 
                 inputs = data[0].cuda(async=self.config.async_loading)
                 targets = data[1].cuda(async=self.config.async_loading)
+                total += inputs.size(0)
 
                 out = self.task(inputs)
 
