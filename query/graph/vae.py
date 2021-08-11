@@ -183,6 +183,7 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
 
         self.max_distance = max_distance
+        self.embedding_dim = embedding_dim
 
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
@@ -209,7 +210,8 @@ class VAE(nn.Module):
         distance = torch.sqrt((quantized - z) ** 2)
 
         if not is_train:
-            return quantized, z, distance
+            return quantized.view([-1, self.embedding_dim]), z.view([-1, self.embedding_dim]),\
+                   distance.view([-1, self.embedding_dim])
         
         decoder_in = torch.cat([z, quantized], dim=1)
 
@@ -228,4 +230,4 @@ class VAE(nn.Module):
                                            - self.max_distance)
         centroid_loss /= cnt
 
-        return loss + centroid_loss, x_recon, perplexity, distance
+        return loss + centroid_loss, x_recon, perplexity, distance.view([-1, self.embedding_dim])
