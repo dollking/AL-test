@@ -78,33 +78,33 @@ class Query(object):
 
                 data = data[0].cuda(async=self.config.async_loading)
 
-                quantized, z, distance = self.vae(data, False)
-                quantized, z, distance = quantized.cpu(), z.cpu(), distance.cpu()
-
-                for idx in range(quantized.size(0)):
-                    if quantized[idx] in data_dict:
-                        data_dict[quantized[idx]].append([distance[idx], global_index])
+                encoding_indices, distance = self.vae(data, False)
+                encoding_indices, distance = encoding_indices.cpu().numpy(), distance.cpu().numpy()
+                
+                for idx in range(len(encoding_indices)):
+                    if encoding_indices[idx] in data_dict:
+                        data_dict[encoding_indices[idx]].append([distance[idx], global_index])
                     else:
-                        data_dict[quantized[idx]] = [[distance[idx], global_index]]
+                        data_dict[encoding_indices[idx]] = [[distance[idx], global_index]]
                     global_index += 1
 
             tqdm_batch.close()
-
+        print(set(data_dict.keys()))
         subset = []
         total_remain = []
-        quota = int(self.batch_size / len(data_dict))
+        quota = int(self.budget / len(data_dict))
         for i in data_dict:
             tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
-            print(tmp_list)
+            
             if len(tmp_list) > quota:
-                subset += list(np.array(tmp_list)[:quota, 2])
+                subset += list(np.array(tmp_list)[:quota, 1])
                 total_remain += tmp_list[quota:]
             else:
-                subset += list(np.array(tmp_list)[:, 2])
+                subset += list(np.array(tmp_list)[:, 1])
 
         if len(subset) < self.budget:
-            tmp_list = sorted(total_remain, lambda x: x[0], reverse=True)
-            subset += list(np.array(tmp_list)[:(self.budget - len(subset)), 2])
+            tmp_list = sorted(total_remain, key=lambda x: x[0], reverse=True)
+            subset += list(np.array(tmp_list)[:(self.budget - len(subset)), 1])
 
         self.labeled += subset
         self.unlabeled = list(set(self.unlabeled) - set(subset))

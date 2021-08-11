@@ -13,9 +13,9 @@ from torchvision.datasets import CIFAR100, CIFAR10
 
 from tensorboardX import SummaryWriter
 
-from .graph.resnet import ResNet18 as resnet
 from .graph.vae import VAE as vae
 from .graph.loss import MSE as Loss
+from task.graph.resnet import ResNet18 as resnet
 
 from utils.metrics import AverageMeter, UncertaintyScore
 from utils.train_utils import set_logger, count_model_prameters
@@ -41,7 +41,7 @@ class Strategy(object):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
 
-        self.batch_size = self.config.vae_batch_size
+        self.batch_size = self.config.batch_size
 
         self.logger = set_logger('train_epoch.log')
 
@@ -87,7 +87,8 @@ class Strategy(object):
         self.vae = nn.DataParallel(self.vae, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
-        self.load_checkpoint()
+        if self.step_cnt:
+            self.load_checkpoint()
 
         self.print_train_info()
 
