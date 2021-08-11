@@ -2,8 +2,8 @@
 class Config(object):
     data_name = 'cifar10'
     initial_size = 100
-    budge_size = 10
-    budge_max = 1000
+    budge_size = 1000
+    budge_max = 10000
     max_cycle = int(budge_max / budge_size)
 
     root_path = '/home/D2019063/Active_Learning/'
@@ -13,8 +13,8 @@ class Config(object):
 
     gpu_cnt = 1
 
-    epoch = 500
-    batch_size = 16
+    epoch = 200
+    batch_size = 128
 
     learning_rate = 0.1
     momentum = 0.9
@@ -24,7 +24,7 @@ class Config(object):
     async_loading = True
 
     #############################################
-    vae_batch_size = 512
+    vae_batch_size = 1024
     vae_epoch = 2000
 
     vae_num_hiddens = 128
