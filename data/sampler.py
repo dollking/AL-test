@@ -6,7 +6,7 @@ class Sampler(data.Sampler):
         self.indices = indices
 
     def __iter__(self):
-        return (self.indices[i] for i in range(len(self.indices)))
+        return (int(self.indices[i]) for i in range(len(self.indices)))
 
     def __len__(self):
         return len(self.indices)
