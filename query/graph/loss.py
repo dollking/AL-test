@@ -6,7 +6,7 @@ class MSE(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.loss = nn.MSELoss(reduction='sum')
+        self.loss = nn.MSELoss(reduction='mean')
 
     def forward(self, recon, target):
         return self.loss(recon, target)

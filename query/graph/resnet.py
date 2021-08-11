@@ -123,13 +123,3 @@ def ResNet101():
 
 def ResNet152():
     return ResNet(Bottleneck, [3, 8, 36, 3])
-
-
-class Loss(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.loss = nn.CrossEntropyLoss()
-
-    def forward(self, logit, target, num_classes):
-        return self.loss(logit, target.to(torch.int64))

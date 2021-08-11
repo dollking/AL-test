@@ -68,30 +68,34 @@ class Query(object):
 
         dataloader = DataLoader(self.cifar10_train, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
-
-        data_dict = {}
         tqdm_batch = tqdm(dataloader, total=len(dataloader))
-        total_index = 0
-        for curr_it, data in enumerate(tqdm_batch):
-            data = data[0].cuda(async=self.config.async_loading)
+        
+        data_dict = {}
+        global_index = 0
+        with torch.no_grad():
+            for curr_it, data in enumerate(tqdm_batch):
+                self.vae.eval()
 
-            quantized, z, distance = self.vae(data, False)
+                data = data[0].cuda(async=self.config.async_loading)
 
-            for idx in range(quantized.size(0)):
-                if quantized[idx] in data_dict:
-                    data_dict[quantized[idx]].append([-1*distance[idx], total_index])
-                else:
-                    data_dict[quantized[idx]] = [[-1 * distance[idx], total_index]]
-                total_index += 1
+                quantized, z, distance = self.vae(data, False)
+                quantized, z, distance = quantized.cpu(), z.cpu(), distance.cpu()
 
-        tqdm_batch.close()
+                for idx in range(quantized.size(0)):
+                    if quantized[idx] in data_dict:
+                        data_dict[quantized[idx]].append([distance[idx], global_index])
+                    else:
+                        data_dict[quantized[idx]] = [[distance[idx], global_index]]
+                    global_index += 1
+
+            tqdm_batch.close()
 
         subset = []
         total_remain = []
         quota = int(self.batch_size / len(data_dict))
         for i in data_dict:
-            tmp_list = sorted(data_dict[i], lambda x: x[0], reverse=True)
-
+            tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
+            print(tmp_list)
             if len(tmp_list) > quota:
                 subset += list(np.array(tmp_list)[:quota, 2])
                 total_remain += tmp_list[quota:]

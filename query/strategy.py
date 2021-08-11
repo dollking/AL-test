@@ -15,7 +15,7 @@ from tensorboardX import SummaryWriter
 
 from .graph.resnet import ResNet18 as resnet
 from .graph.vae import VAE as vae
-from .graph.resnet import Loss
+from .graph.loss import MSE as Loss
 
 from utils.metrics import AverageMeter, UncertaintyScore
 from utils.train_utils import set_logger, count_model_prameters
@@ -27,7 +27,7 @@ class Strategy(object):
     def __init__(self, config, step_cnt):
         self.config = config
         self.step_cnt = step_cnt
-        self.best_acc = 0.0
+        self.best = 999999.0
 
         self.train_transform = transforms.Compose([
             transforms.RandomHorizontalFlip(),
@@ -89,9 +89,6 @@ class Strategy(object):
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint()
 
-        # Summary Writer
-        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
-                                            comment=f'cifar10_step_{self.step_cnt}')
         self.print_train_info()
 
     def print_train_info(self):
@@ -133,7 +130,7 @@ class Strategy(object):
             self.train_by_epoch()
 
     def train_by_epoch(self):
-        tqdm_batch = tqdm(self.train_loader, total=len(self.train_loader))
+        tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
 
         avg_loss = AverageMeter()
         for curr_it, data in enumerate(tqdm_batch):
@@ -151,7 +148,6 @@ class Strategy(object):
             loss = recon_error + vq_loss
             if self.step_cnt:   # distance loss
                 loss += torch.mean(torch.abs(u_score - distance / self.config.vae_distance))
-            loss.backward()
 
             loss.backward()
             self.vae_opt.step()
@@ -162,10 +158,8 @@ class Strategy(object):
         self.vae_scheduler.step(avg_loss.val)
 
         with torch.no_grad():
-            tqdm_batch = tqdm(self.test_loader, total=len(self.test_loader))
+            tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
 
-            total = 0
-            correct = 0
             avg_loss = AverageMeter()
             for curr_it, data in enumerate(tqdm_batch):
                 self.task.eval()
@@ -186,6 +180,9 @@ class Strategy(object):
 
             tqdm_batch.close()
 
-            if correct / total > self.best_acc:
-                self.best_acc = correct / total
+            if avg_loss.val < self.best:
+                self.best = avg_loss.val
                 self.save_checkpoint()
+            
+            if self.epoch % 50 == 1:
+                print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best}')

@@ -228,4 +228,4 @@ class VAE(nn.Module):
                                            - self.max_distance)
         centroid_loss /= cnt
 
-        return loss + centroid_loss * 0.5, x_recon, perplexity, distance
+        return loss + centroid_loss, x_recon, perplexity, distance
