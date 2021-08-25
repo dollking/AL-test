@@ -13,13 +13,11 @@ if __name__ == '__main__':
     fp = open('record.txt', 'w')
     for step_cnt in range(config.max_cycle):
         # take a new sample
-        torch.cuda.empty_cache()
-        query.sampling()
+        query.sampling(step_cnt)
 
         # train a task model
         print('step {}: train data count - {}'.format(step_cnt + 1, (step_cnt + 1) * config.budge_size))
 
-        torch.cuda.empty_cache()
         task = Task(config, step_cnt + 1, query.labeled)
         task.run()
 

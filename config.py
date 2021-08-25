@@ -15,7 +15,7 @@ class Config(object):
 
     gpu_cnt = 1
 
-    epoch = 200
+    epoch = 300
     batch_size = 128
 
     learning_rate = 0.1
@@ -27,13 +27,13 @@ class Config(object):
 
     #############################################
     vae_batch_size = 1024
-    vae_epoch = 2000
+    vae_epoch = 3500
 
     vae_num_hiddens = 128
     vae_num_residual_hiddens = 32
     vae_num_residual_layers = 2
 
-    vae_embedding_dim = 64
+    vae_embedding_dim = 1024
     vae_num_embeddings = 100
 
     vae_commitment_cost = 0.25

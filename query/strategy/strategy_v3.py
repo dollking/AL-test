@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from .graph.vae import VAE as vae
-from .graph.loss import MSE as Loss
+from query.graph.vae_v2 import VAE as vae
+from query.graph.loss import MSE as Loss
 from task.graph.resnet import ResNet18 as resnet
 
 from utils.metrics import AverageMeter, UncertaintyScore
@@ -55,7 +55,7 @@ class Strategy(object):
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
-        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=1,
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=1,
                                       pin_memory=self.config.pin_memory)
 
         # define models
@@ -152,7 +152,7 @@ class Strategy(object):
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
         with torch.no_grad():
-            tqdm_batch = tqdm(self.test_dataset, leave=False, total=len(self.test_dataset))
+            tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
 
             avg_loss = AverageMeter()
             for curr_it, data in enumerate(tqdm_batch):

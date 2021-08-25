@@ -217,7 +217,7 @@ class VAE(nn.Module):
 
         self.pdist = nn.PairwiseDistance(p=2)
 
-    def forward(self, x, is_train=True):
+    def forward(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv_1(z)
         z = self._pre_vq_conv_2(z)

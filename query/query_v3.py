@@ -11,10 +11,12 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from .graph.vae import VAE as vae
+from .graph.vae_v2 import VAE as vae
+from .strategy.strategy_v3 import Strategy
+
 from task.graph.resnet import ResNet18 as resnet
 from task.graph.lossnet import LossNet as lossnet
-from .strategy.strategy_v3 import Strategy
+
 from data.sampler import Sampler
 
 cudnn.benchmark = True
@@ -96,13 +98,13 @@ class Query(object):
 
                 data = data[0].cuda(async=self.config.async_loading)
 
-                _, _, _, encoding_indices = self.vae(data, False)
+                _, _, _, encoding_indices = self.vae(data)
                 _, features = self.task(data)
                 pred_loss = self.loss_module(features)
-
+                
                 encoding_indices = encoding_indices.cpu().numpy()
                 pred_loss = pred_loss.view([-1, ]).cpu().numpy()
-
+                
                 for idx in range(len(encoding_indices)):
                     if encoding_indices[idx] in data_dict:
                         data_dict[encoding_indices[idx]].append([pred_loss[idx], self.unlabeled[global_index]])
