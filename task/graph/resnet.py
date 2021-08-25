@@ -93,33 +93,33 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         out = self.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
+        out1 = self.layer1(out)
+        out2 = self.layer2(out1)
+        out3 = self.layer3(out2)
+        out4 = self.layer4(out3)
 
-        out = self.avg_pool(out)
+        out = self.avg_pool(out4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
 
-        return out
+        return out, [out1, out2, out3, out4]
 
 
-def ResNet18():
+def ResNet18(num_classes=10):
     return ResNet(BasicBlock, [2, 2, 2, 2])
 
 
-def ResNet34():
+def ResNet34(num_classes=10):
     return ResNet(BasicBlock, [3, 4, 6, 3])
 
 
-def ResNet50():
+def ResNet50(num_classes=10):
     return ResNet(Bottleneck, [3, 4, 6, 3])
 
 
-def ResNet101():
+def ResNet101(num_classes=10):
     return ResNet(Bottleneck, [3, 4, 23, 3])
 
 
-def ResNet152():
+def ResNet152(num_classes=10):
     return ResNet(Bottleneck, [3, 8, 36, 3])

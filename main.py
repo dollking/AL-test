@@ -1,8 +1,8 @@
 import torch
 
-from query.query import Query
-from query.strategy import Strategy
-from task.classification import Classification as Task
+from query.query_v3 import Query
+from query.strategy.strategy_v3 import Strategy
+from task.classification_loss import ClassificationWithLoss as Task
 from config import Config
 
 
@@ -12,11 +12,6 @@ if __name__ == '__main__':
 
     fp = open('record.txt', 'w')
     for step_cnt in range(config.max_cycle):
-        # train a sampling strategy
-        torch.cuda.empty_cache()
-        strategy = Strategy(config, step_cnt)
-        strategy.run()
-        
         # take a new sample
         torch.cuda.empty_cache()
         query.sampling()

@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from .graph.vae import VAE as vae
-from .graph.loss import MSE as Loss
+from query.graph.vae import VAE as vae
+from query.graph.loss import MSE as Loss
 from task.graph.resnet import ResNet18 as resnet
 
 from utils.metrics import AverageMeter, UncertaintyScore
@@ -47,6 +47,11 @@ class Strategy(object):
                                          train=True, download=True, transform=self.train_transform)
             self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=False, download=True, transform=self.test_transform)
+        elif self.config.data_name == 'cifar100':
+            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                          train=True, download=True, transform=self.train_transform)
+            self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                         train=False, download=True, transform=self.test_transform)
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)

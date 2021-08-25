@@ -7,10 +7,12 @@ from torch import nn
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, CIFAR100
 
 from .graph.resnet import ResNet18 as resnet
-from .graph.loss import CELoss as Loss
+from .graph.lossnet import LossNet as lossnet
+from .graph.loss import CELoss as loss
+from .graph.loss import RankingLoss as r_loss
 from data.sampler import Sampler
 
 from utils.metrics import AverageMeter
@@ -19,7 +21,7 @@ from utils.train_utils import set_logger, count_model_prameters
 cudnn.benchmark = True
 
 
-class Classification(object):
+class ClassificationWithLoss(object):
     def __init__(self, config, step_cnt, sample_list):
         self.config = config
         self.step_cnt = step_cnt
@@ -47,7 +49,12 @@ class Classification(object):
                                          train=True, download=True, transform=self.train_transform)
             self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=False, download=True, transform=self.test_transform)
-        
+        elif self.config.data_name == 'cifar100':
+            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                         train=True, download=True, transform=self.train_transform)
+            self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                        train=False, download=True, transform=self.test_transform)
+
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
                                        pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=1,
@@ -55,16 +62,22 @@ class Classification(object):
 
         # define models
         self.task = resnet().cuda()
+        self.loss_module = lossnet().cuda()
 
         # define loss
-        self.loss = Loss().cuda()
+        self.loss = loss().cuda()
+        self.r_loss = r_loss().cuda()
 
         # define optimizer
         self.task_opt = torch.optim.SGD(self.task.parameters(), lr=self.config.learning_rate,
                                         momentum=self.config.momentum, weight_decay=self.config.wdecay)
+        self.loss_opt = torch.optim.SGD(self.loss_module.parameters(), lr=self.config.learning_rate,
+                                        momentum=self.config.momentum, weight_decay=self.config.wdecay)
 
         # define optimize scheduler
         self.task_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.task_opt, mode='min',
+                                                                         factor=0.8, cooldown=8)
+        self.loss_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.loss_opt, mode='min',
                                                                          factor=0.8, cooldown=8)
 
         # initialize train counter
@@ -79,6 +92,7 @@ class Classification(object):
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.task = nn.DataParallel(self.task, device_ids=gpu_list)
+        self.loss_module = nn.DataParallel(self.loss_module, device_ids=gpu_list)
 
         self.print_train_info()
 
@@ -91,6 +105,7 @@ class Classification(object):
 
         state = {
             'task_state_dict': self.task.state_dict(),
+            'loss_state_dict': self.loss_module.state_dict(),
         }
 
         torch.save(state, tmp_name)
@@ -118,9 +133,12 @@ class Classification(object):
             inputs = data[0].cuda(async=self.config.async_loading)
             targets = data[1].cuda(async=self.config.async_loading)
 
-            out = self.task(inputs)
+            out, features = self.task(inputs)
+            pred_loss = self.loss_module(features)
+            pred_loss = pred_loss.view([-1, ])
 
             loss = self.loss(out, targets, 10)
+            loss = self.r_loss(loss, pred_loss) + torch.mean(loss)
 
             loss.backward()
             self.task_opt.step()
@@ -135,7 +153,6 @@ class Classification(object):
 
             total = 0
             correct = 0
-            avg_loss = AverageMeter()
             for curr_it, data in enumerate(tqdm_batch):
                 self.task.eval()
 
@@ -143,15 +160,9 @@ class Classification(object):
                 targets = data[1].cuda(async=self.config.async_loading)
                 total += inputs.size(0)
 
-                out = self.task(inputs)
-
-                loss = self.loss(out, targets, 10)
-
+                out, _ = self.task(inputs)
                 _, predicted = torch.max(out.data, 1)
-                total += targets.size(0)
                 correct += (predicted == targets).sum().item()
-
-                avg_loss.update(loss)
 
             tqdm_batch.close()
 
