@@ -178,26 +178,9 @@ class Strategy(object):
         self.summary_writer.add_image('recon/img 1', data_recon_1[0], self.epoch)
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
-        with torch.no_grad():
-            tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
+        if avg_loss.val < self.best:
+            self.best = avg_loss.val
+            self.save_checkpoint()
 
-            avg_loss = AverageMeter()
-            for curr_it, data in enumerate(tqdm_batch):
-                self.vae.eval()
-                data = data[0].cuda(async=self.config.async_loading)
-
-                vq_loss, data_recon, _, _ = self.vae(data)
-
-                recon_loss = self.loss(data_recon, data)
-                loss = recon_loss + vq_loss
-
-                avg_loss.update(loss)
-
-            tqdm_batch.close()
-
-            if avg_loss.val < self.best:
-                self.best = avg_loss.val
-                self.save_checkpoint()
-
-            if self.epoch % 50 == 0:
-                print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
+        if self.epoch % 50 == 0:
+            print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
