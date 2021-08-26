@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from .graph.vae_v2 import VAE as vae
+from .graph.vae_v3 import VAE as vae
 from .strategy.strategy_v3 import Strategy
 
 from task.graph.resnet import ResNet18 as resnet

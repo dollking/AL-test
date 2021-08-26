@@ -9,9 +9,11 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from query.graph.vae_v2 import VAE as vae
-from query.graph.loss import MSE as Loss
+from query.graph.vae_v3 import VAE as vae
+from query.graph.loss import MSE as loss
+from query.graph.loss import SelfClusteringLoss as scloss
 from task.graph.resnet import ResNet18 as resnet
+from data.dataset import Dataset_CIFAR10, Dataset_CIFAR100
 
 from utils.metrics import AverageMeter, UncertaintyScore
 from utils.train_utils import set_logger, count_model_prameters
@@ -43,13 +45,13 @@ class Strategy(object):
 
         # define dataloader
         if self.config.data_name == 'cifar10':
-            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.train_transform)
+            self.train_dataset = Dataset_CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                                 train=True, download=True, transform=self.train_transform)
             self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=True, download=True, transform=self.test_transform)
         elif self.config.data_name == 'cifar100':
-            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                          train=True, download=True, transform=self.train_transform)
+            self.train_dataset = Dataset_CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                                  train=True, download=True, transform=self.train_transform)
             self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                          train=True, download=True, transform=self.test_transform)
 
@@ -66,7 +68,8 @@ class Strategy(object):
                        self.config.vae_decay).cuda()
 
         # define loss
-        self.loss = Loss().cuda()
+        self.loss = loss().cuda()
+        self.scloss = scloss().cuda()
 
         # define optimizer
         self.vae_opt = torch.optim.Adam(self.vae.parameters(), lr=self.config.vae_learning_rate)
@@ -94,6 +97,20 @@ class Strategy(object):
         self.print_train_info()
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
                                             comment='BarGen')
+
+    def collate_function(self, samples):
+        origin = torch.cat(
+            [sample['origin'].view(
+                [1, sample['origin'].size(0), sample['origin'].size(1), sample['origin'].size(2)]
+            ) for sample in samples], axis=0
+        )
+        trans = torch.cat(
+            [sample['trans'].view(
+                [1, sample['trans'].size(0), sample['trans'].size(1), sample['trans'].size(2)]
+            ) for sample in samples], axis=0
+        )
+
+        return origin, trans
 
     def print_train_info(self):
         print("seed: ", self.manual_seed)
@@ -129,26 +146,36 @@ class Strategy(object):
             self.vae.train()
             self.vae_opt.zero_grad()
 
-            data = data[0].cuda(async=self.config.async_loading)
+            data_origin = data[0].cuda(async=self.config.async_loading)
+            data_trans = data[1].cuda(async=self.config.async_loading)
 
-            vq_loss, data_recon, perplexity, encoding_indices = self.vae(data)
+            vq_loss_1, data_recon_1, _, encoding_indices_1 = self.vae(data_origin)
+            vq_loss_2, data_recon_2, _, encoding_indices_2 = self.vae(data_trans)
 
-            recon_loss = self.loss(data_recon, data)
-            loss = recon_loss + vq_loss
+            # reconstruction loss
+            recon_loss = self.loss(data_recon_1, data_origin)
+            recon_loss += self.loss(data_recon_2, data_trans)
+
+            # self clustering loss
+            scloss = self.scloss(encoding_indices_1, encoding_indices_2, self.config.vae_num_embeddings)
+
+            # vq loss
+            vq_loss = vq_loss_1 + vq_loss_2
+
+            loss = ((recon_loss + vq_loss) / 2) + scloss
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            centroid_set |= set(encoding_indices.view([-1, ]).cpu().tolist())
+            centroid_set |= set(encoding_indices_1.view([-1, ]).cpu().tolist())
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
 
-        self.summary_writer.add_image('origin/img 1', data[0], self.epoch)
-        self.summary_writer.add_image('origin/img 2', data[1], self.epoch)
-        self.summary_writer.add_image('recon/img 1', data_recon[0], self.epoch)
-        self.summary_writer.add_image('recon/img 2', data_recon[1], self.epoch)
+        self.summary_writer.add_image('origin/img 1', data_origin[0], self.epoch)
+        self.summary_writer.add_image('trans/img 2', data_trans[0], self.epoch)
+        self.summary_writer.add_image('recon/img 1', data_recon_1[0], self.epoch)
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
         with torch.no_grad():
