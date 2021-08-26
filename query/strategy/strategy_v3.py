@@ -32,6 +32,7 @@ class Strategy(object):
             transforms.RandomCrop(size=32, padding=4),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            transforms.RandomErasing(p=0.6, scale=(0.02, 0.33), ratio=(0.3, 3.3)),
         ])
 
         self.test_transform = transforms.Compose([
@@ -147,7 +148,7 @@ class Strategy(object):
             self.vae_opt.zero_grad()
 
             data_origin = data['origin'].cuda(async=self.config.async_loading)
-            data_trans = data['target'].cuda(async=self.config.async_loading)
+            data_trans = data['trans'].cuda(async=self.config.async_loading)
 
             vq_loss_1, data_recon_1, _, encoding_indices_1 = self.vae(data_origin)
             vq_loss_2, data_recon_2, _, encoding_indices_2 = self.vae(data_trans)
