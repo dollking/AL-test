@@ -146,8 +146,8 @@ class Strategy(object):
             self.vae.train()
             self.vae_opt.zero_grad()
 
-            data_origin = data[0].cuda(async=self.config.async_loading)
-            data_trans = data[1].cuda(async=self.config.async_loading)
+            data_origin = data['origin'].cuda(async=self.config.async_loading)
+            data_trans = data['target'].cuda(async=self.config.async_loading)
 
             vq_loss_1, data_recon_1, _, encoding_indices_1 = self.vae(data_origin)
             vq_loss_2, data_recon_2, _, encoding_indices_2 = self.vae(data_trans)
