@@ -1,4 +1,6 @@
 from PIL import Image
+
+from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
 
@@ -16,6 +18,9 @@ class Dataset_CIFAR10(CIFAR10):
             trans = self.transform(origin)
         else:
             trans = origin
+
+        origin = transforms.ToTensor()(origin)
+        origin = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(origin)
 
         return {'origin': origin, 'trans': trans}
 
