@@ -35,11 +35,6 @@ class Strategy(object):
             transforms.RandomErasing(p=0.6, scale=(0.05, 0.2), ratio=(0.3, 3.3)),
         ])
 
-        self.test_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
-
         self.batch_size = self.config.batch_size * 8
 
         self.logger = set_logger('train_epoch.log')
@@ -48,18 +43,12 @@ class Strategy(object):
         if self.config.data_name == 'cifar10':
             self.train_dataset = Dataset_CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                                  train=True, download=True, transform=self.train_transform)
-            self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                        train=True, download=True, transform=self.test_transform)
         elif self.config.data_name == 'cifar100':
             self.train_dataset = Dataset_CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                                   train=True, download=True, transform=self.train_transform)
-            self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.test_transform)
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
-        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=1,
-                                      pin_memory=self.config.pin_memory)
 
         # define models
         self.task = resnet().cuda()
@@ -163,7 +152,7 @@ class Strategy(object):
             # vq loss
             vq_loss = vq_loss_1 + vq_loss_2
 
-            loss = ((recon_loss + vq_loss) / 2) + scloss
+            loss = ((recon_loss + vq_loss) / 2) + (scloss * 0.5)
 
             loss.backward()
             self.vae_opt.step()

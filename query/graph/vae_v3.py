@@ -224,7 +224,7 @@ class VAE(nn.Module):
         _z = self.conv_1(z)
 
         _, c, w, h = z.size()
-        z_flat = z.view([-1, c * w * h, 1, 1])
+        z_flat = torch.sigmoid(z.view([-1, c * w * h, 1, 1]))
 
         loss, quantized, perplexity, encoding_indices = self._vq_vae(z_flat)
         quantized = quantized.view([-1, c, w, h])
