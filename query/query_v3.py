@@ -41,6 +41,9 @@ class Query(object):
         if self.config.data_name == 'cifar10':
             self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                    train=True, download=True, transform=self.train_transform)
+        elif self.config.data_name == 'cifar100':
+            self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                   train=True, download=True, transform=self.train_transform)
 
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
