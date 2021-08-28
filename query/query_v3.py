@@ -42,7 +42,7 @@ class Query(object):
             self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                    train=True, download=True, transform=self.train_transform)
         elif self.config.data_name == 'cifar100':
-            self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+            self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                    train=True, download=True, transform=self.train_transform)
 
         # define models
