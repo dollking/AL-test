@@ -40,4 +40,7 @@ class Dataset_CIFAR100(CIFAR100):
         else:
             trans = origin
 
+        origin = transforms.ToTensor()(origin)
+        origin = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(origin)
+
         return {'origin': origin, 'trans': trans}
