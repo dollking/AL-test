@@ -16,7 +16,7 @@ if __name__ == '__main__':
         query.sampling(step_cnt)
 
         # train a task model
-        print('step {}: train data count - {}'.format(step_cnt + 1, (step_cnt + 1) * config.budge_size))
+        print('step {}: train data count - {}'.format(step_cnt + 1, len(query.labeled)))
 
         task = Task(config, step_cnt + 1, query.labeled)
         task.run()

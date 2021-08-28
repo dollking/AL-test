@@ -81,10 +81,10 @@ class Query(object):
         strategy.run()
 
     def sampling(self, step_cnt):
-        if step_cnt:
-            self.load_checkpoint(step_cnt)
-        else:
+        if not step_cnt:
             self.training()
+
+        self.load_checkpoint(step_cnt)
 
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))

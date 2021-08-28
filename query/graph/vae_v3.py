@@ -199,13 +199,9 @@ class VAE(nn.Module):
                                         kernel_size=3,
                                         stride=2, padding=1)
         self._pre_vq_conv_2 = nn.Conv2d(in_channels=num_hiddens,
-                                        out_channels=64,  # embedding_dim,
+                                        out_channels=embedding_dim,
                                         kernel_size=1,
                                         stride=1)
-        self.conv_1 = nn.Conv2d(in_channels=64,
-                                out_channels=32,  # embedding_dim,
-                                kernel_size=1,
-                                stride=1)
 
         self._vq_vae = VectorQuantizerEMA(num_embeddings, embedding_dim,
                                           commitment_cost, decay)
@@ -215,21 +211,22 @@ class VAE(nn.Module):
                                 num_residual_layers,
                                 num_residual_hiddens)
 
-        self.pdist = nn.PairwiseDistance(p=2)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv_1(z)
         z = self._pre_vq_conv_2(z)
-        _z = self.conv_1(z)
 
-        _, c, w, h = z.size()
-        z_flat = torch.sigmoid(z.view([-1, c * w * h, 1, 1]))
+        _z = self.tanh(self.avg_pool(z))
 
-        loss, quantized, perplexity, encoding_indices = self._vq_vae(z_flat)
-        quantized = quantized.view([-1, c, w, h])
+        loss, quantized, perplexity, encoding_indices = self._vq_vae(_z)
 
-        decoder_in = torch.cat([_z, quantized], dim=1)
+        _, _, w, h = z.size()
+        quantized = quantized.repeat([1, 1, w, h])
+
+        decoder_in = torch.cat([z, quantized], dim=1)
 
         x_recon = self._decoder(decoder_in)
 

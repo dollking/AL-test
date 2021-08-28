@@ -22,4 +22,4 @@ class SelfClusteringLoss(nn.Module):
     def forward(self, indices_1, indices_2, num_classes):
         one_hot = nn.functional.one_hot(indices_2, num_classes).type(torch.float).cuda()
 
-        return self.loss(self.m(one_hot), indices_1)
+        return self.loss(torch.log(one_hot), indices_1)
