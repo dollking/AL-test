@@ -16,10 +16,7 @@ class SelfClusteringLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.loss = nn.NLLLoss()
-        self.m = nn.LogSoftmax(dim=1)
+        self.loss = nn.CrossEntropyLoss()
 
-    def forward(self, indices_1, indices_2, num_classes):
-        one_hot = nn.functional.one_hot(indices_2, num_classes).type(torch.float).cuda()
-
-        return self.loss(torch.log(one_hot), indices_1)
+    def forward(self, indices, inverse_distances, num_classes):
+        return self.loss(inverse_distances, indices)

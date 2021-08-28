@@ -139,26 +139,26 @@ class Strategy(object):
             data_origin = data['origin'].cuda(async=self.config.async_loading)
             data_trans = data['trans'].cuda(async=self.config.async_loading)
 
-            vq_loss_1, data_recon_1, _, encoding_indices_1 = self.vae(data_origin)
-            vq_loss_2, data_recon_2, _, encoding_indices_2 = self.vae(data_trans)
+            vq_loss_1, data_recon_1, _, encoding_indices, _ = self.vae(data_origin)
+            vq_loss_2, data_recon_2, _, _, inverse_distances = self.vae(data_trans)
 
             # reconstruction loss
             recon_loss = self.loss(data_recon_1, data_origin)
             recon_loss += self.loss(data_recon_2, data_trans)
 
             # self clustering loss
-            scloss = self.scloss(encoding_indices_1, encoding_indices_2, self.config.vae_num_embeddings)
+            scloss = self.scloss(encoding_indices, inverse_distances, self.config.vae_num_embeddings)
 
             # vq loss
             vq_loss = vq_loss_1 + vq_loss_2
 
-            loss = ((recon_loss + vq_loss) / 2) + (scloss * 0.5)
+            loss = ((recon_loss + vq_loss) / 2)# + (scloss * 0.5)
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            centroid_set |= set(encoding_indices_1.view([-1, ]).cpu().tolist())
+            centroid_set |= set(encoding_indices.view([-1, ]).cpu().tolist())
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)

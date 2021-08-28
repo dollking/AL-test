@@ -91,14 +91,14 @@ class Query(object):
         tqdm_batch = tqdm(dataloader, total=len(dataloader))
 
         data_dict = {}
-        global_index = 0
+        index = 0
         with torch.no_grad():
             for curr_it, data in enumerate(tqdm_batch):
                 self.vae.eval()
 
                 data = data[0].cuda(async=self.config.async_loading)
 
-                _, _, _, encoding_indices = self.vae(data)
+                _, _, _, encoding_indices, inverse_distances = self.vae(data)
                 _, features = self.task(data)
                 pred_loss = self.loss_module(features)
                 
@@ -107,12 +107,16 @@ class Query(object):
                 
                 for idx in range(len(encoding_indices)):
                     if encoding_indices[idx] in data_dict:
-                        data_dict[encoding_indices[idx]].append([pred_loss[idx], self.unlabeled[global_index]])
+                        data_dict[encoding_indices[idx]].append([pred_loss[idx], self.unlabeled[index]])
                     else:
-                        data_dict[encoding_indices[idx]] = [[pred_loss[idx], self.unlabeled[global_index]]]
-                    global_index += 1
+                        data_dict[encoding_indices[idx]] = [[pred_loss[idx], self.unlabeled[index]]]
+                    index += 1
 
             tqdm_batch.close()
+            
+        for i in data_dict:
+            print(i, len(data_dict[i]), end=' / ')
+        print()
 
         subset = []
         total_remain = []
