@@ -26,6 +26,7 @@ class Query(object):
     def __init__(self, config):
         self.config = config
 
+        self.initial_size = self.config.initial_size
         self.budget = self.config.budge_size
         self.labeled = []
         self.unlabeled = [i for i in range(self.config.data_size)]
@@ -43,7 +44,7 @@ class Query(object):
                                    train=True, download=True, transform=self.train_transform)
         elif self.config.data_name == 'cifar100':
             self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                   train=True, download=True, transform=self.train_transform)
+                                    train=True, download=True, transform=self.train_transform)
 
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
@@ -84,6 +85,8 @@ class Query(object):
         strategy.run()
 
     def sampling(self, step_cnt):
+        sample_size = self.budget if step_cnt else self.initial_size
+
         if not step_cnt:
             self.training()
 
@@ -93,11 +96,13 @@ class Query(object):
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
         tqdm_batch = tqdm(dataloader, total=len(dataloader))
 
-        data_dict = {}
         index = 0
+        data_dict = {}
         with torch.no_grad():
             for curr_it, data in enumerate(tqdm_batch):
                 self.vae.eval()
+                self.task.eval()
+                self.loss_module.eval()
 
                 data = data[0].cuda(async=self.config.async_loading)
 
@@ -123,9 +128,18 @@ class Query(object):
 
         subset = []
         total_remain = []
-        quota = int(self.budget / len(data_dict))
+        quota = int(sample_size / len(data_dict))
         for i in data_dict:
-            if not step_cnt:
+            if step_cnt:
+                tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
+
+                if len(tmp_list) > quota:
+                    subset += list(np.array(tmp_list)[:quota, 1])
+                    total_remain += tmp_list[quota:]
+                else:
+                    subset += list(np.array(tmp_list)[:, 1])
+
+            else:
                 tmp_list = set(np.array(data_dict[i])[:, 1])
 
                 if len(tmp_list) > quota:
@@ -135,24 +149,16 @@ class Query(object):
                 else:
                     subset += list(tmp_list)
 
-            else:
-                tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
-
-                if len(tmp_list) > quota:
-                    subset += list(np.array(tmp_list)[:quota, 1])
-                    total_remain += tmp_list[quota:]
-                else:
-                    subset += list(np.array(tmp_list)[:, 1])
-
-        if not step_cnt:
-            subset += random.sample(total_remain, self.budget - len(subset))
-        else:
+        if step_cnt:
             tmp_list = sorted(total_remain, key=lambda x: x[0], reverse=True)
-            subset += list(np.array(tmp_list)[:(self.budget - len(subset)), 1])
+            subset += list(np.array(tmp_list)[:(sample_size - len(subset)), 1])
+
+        else:
+            subset += random.sample(total_remain, sample_size - len(subset))
 
         print('cent cnt:', len(set(data_dict.keys())))
 
-        if len(set(subset)) < self.budget:
+        if len(set(subset)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(subset)))
 
         self.labeled += subset
