@@ -2,11 +2,13 @@
 class Config(object):
     data_name = 'cifar10'
     data_size = 50000
+    num_classes = 10
 
+    initial_size = 1000
     budge_size = 1000
     budge_max = 10000
 
-    max_cycle = int(budge_max / budge_size)
+    max_cycle = ((budge_max - initial_size) // budge_size) + 1
 
     root_path = '/home/D2019063/Active_Learning/'
     data_directory = 'data'
@@ -16,6 +18,7 @@ class Config(object):
     gpu_cnt = 1
 
     epoch = 300
+    epochl = 140
     batch_size = 128
 
     learning_rate = 0.1
