@@ -86,6 +86,7 @@ class Strategy(object):
 
         self.print_train_info()
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
+                                            comment='VQ-VAE')
 
     def print_train_info(self):
         print("seed: ", self.manual_seed)
