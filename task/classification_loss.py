@@ -131,6 +131,9 @@ class ClassificationWithLoss(object):
             self.task.train()
             self.task_opt.zero_grad()
 
+            self.loss_module.train()
+            self.loss_opt.zero_grad()
+
             inputs = data[0].cuda(async=self.config.async_loading)
             targets = data[1].cuda(async=self.config.async_loading)
 
