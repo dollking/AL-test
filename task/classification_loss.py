@@ -61,7 +61,7 @@ class ClassificationWithLoss(object):
                                       pin_memory=self.config.pin_memory)
 
         # define models
-        self.task = resnet().cuda()
+        self.task = resnet(self.config.num_classes).cuda()
         self.loss_module = lossnet().cuda()
 
         # define loss
@@ -82,6 +82,7 @@ class ClassificationWithLoss(object):
 
         # initialize train counter
         self.epoch = 0
+        self.epochl = self.config.epochl
 
         self.manual_seed = random.randint(10000, 99999)
 
@@ -134,6 +135,10 @@ class ClassificationWithLoss(object):
             targets = data[1].cuda(async=self.config.async_loading)
 
             out, features = self.task(inputs)
+            if self.epoch > self.epochl:
+                for idx in range(len(features)):
+                    features[idx] = features[idx].detach()
+
             pred_loss = self.loss_module(features)
             pred_loss = pred_loss.view([-1, ])
 
@@ -142,6 +147,8 @@ class ClassificationWithLoss(object):
 
             loss.backward()
             self.task_opt.step()
+            self.loss_opt.step()
+
             avg_loss.update(loss)
 
         tqdm_batch.close()
