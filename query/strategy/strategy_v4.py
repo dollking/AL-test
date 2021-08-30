@@ -51,7 +51,7 @@ class Strategy(object):
                                        pin_memory=self.config.pin_memory)
 
         # define models
-        self.task = resnet().cuda()
+        self.task = resnet(self.config.num_classes).cuda()
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
                        self.config.vae_num_residual_hiddens, self.config.vae_num_embeddings,
                        self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_distance,
