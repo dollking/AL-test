@@ -1,16 +1,13 @@
-import torch
-
-from query.query_v3 import Query
-from query.strategy.strategy_v3 import Strategy
-from task.classification_loss import ClassificationWithLoss as Task
 from config import Config
+from query.query_v3 import Query
+from task.classification_loss import ClassificationWithLoss as Task
 
 
-if __name__ == '__main__':
+def main(cycle_cnt):
     config = Config()
     query = Query(config)
 
-    fp = open('record.txt', 'w')
+    fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):
         # take a new sample
         query.sampling(step_cnt)
@@ -26,3 +23,8 @@ if __name__ == '__main__':
         fp.write(f'{task.best_acc}\n')
 
     fp.close()
+
+
+if __name__ == '__main__':
+    for i in range(10):
+        main(i)
