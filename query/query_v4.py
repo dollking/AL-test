@@ -110,7 +110,7 @@ class Query(object):
                 _, features = self.task(data)
                 pred_loss = self.loss_module(features)
 
-                code = tuple(map(tuple, code.cpu().tolist()))
+                code = tuple(map(tuple, code.view([-1, self.config.vae_embedding_dim]).cpu().tolist()))
                 pred_loss = pred_loss.view([-1, ]).cpu().numpy()
 
                 for idx in range(len(code)):

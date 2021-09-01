@@ -133,7 +133,7 @@ class Strategy(object):
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            centroid_set |= set(tuple(map(tuple, code.view([-1, ]).cpu().tolist())))
+            centroid_set |= set(tuple(map(tuple, code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
