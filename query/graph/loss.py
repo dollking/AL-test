@@ -26,7 +26,7 @@ class CodeLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.loss = nn.BCELoss()
+        self.loss = nn.MSELoss()
 
     def forward(self, origin_code, trans_code):
         code_loss = torch.mean(torch.abs(1 - torch.sum(origin_code, dim=1))) +\

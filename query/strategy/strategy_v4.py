@@ -140,8 +140,9 @@ class Strategy(object):
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
 
-        self.summary_writer.add_image('image/origin', data[0], self.epoch)
-        self.summary_writer.add_image('image/recon_origin', data[0], self.epoch)
+        self.summary_writer.add_image('image/origin', origin_data[0], self.epoch)
+        self.summary_writer.add_image('image/trans', trans_data[0], self.epoch)
+        self.summary_writer.add_image('image/recon_origin', origin_recon[0], self.epoch)
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
         if avg_loss.val < self.best:
