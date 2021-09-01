@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from query.graph.vae_v3 import VAE as vae
+from query.graph.vae_v4 import VAE as vae
 from query.graph.loss import MSE as loss
 from query.graph.loss import SelfClusteringLoss as scloss
 from task.graph.resnet import ResNet18 as resnet
