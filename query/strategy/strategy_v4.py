@@ -28,11 +28,8 @@ class Strategy(object):
         self.best = 999999.0
 
         self.train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=32, padding=4),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            transforms.RandomErasing(p=0.6, scale=(0.05, 0.2), ratio=(0.3, 3.3)),
         ])
 
         self.batch_size = self.config.batch_size * 8
@@ -128,14 +125,15 @@ class Strategy(object):
 
             # reconstruction loss
             recon_loss = self.loss(data_recon, data)
+            code_loss = torch.mean(torch.abs(1 - torch.sum(code, dim=1)))
 
-            loss = recon_loss
+            loss = recon_loss + code_loss * 0.1
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            centroid_set |= set(tuple(map(tuple(code.view([-1, ]).cpu().tolist()))))
+            centroid_set |= set(tuple(map(tuple, code.view([-1, ]).cpu().tolist())))
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
