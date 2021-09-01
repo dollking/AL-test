@@ -11,7 +11,7 @@ from torchvision.datasets import CIFAR100, CIFAR10
 
 from query.graph.vae_v4 import VAE as vae
 from query.graph.loss import MSE as loss
-from query.graph.loss import SelfClusteringLoss as scloss
+from query.graph.loss import CodeLoss as closs
 from task.graph.resnet import ResNet18 as resnet
 from data.dataset import Dataset_CIFAR10, Dataset_CIFAR100
 
@@ -38,11 +38,11 @@ class Strategy(object):
 
         # define dataloader
         if self.config.data_name == 'cifar10':
-            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.train_transform)
+            self.train_dataset = Dataset_CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                                 train=True, download=True, transform=self.train_transform)
         elif self.config.data_name == 'cifar100':
-            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                          train=True, download=True, transform=self.train_transform)
+            self.train_dataset = Dataset_CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                                  train=True, download=True, transform=self.train_transform)
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
@@ -56,7 +56,7 @@ class Strategy(object):
 
         # define loss
         self.loss = loss().cuda()
-        self.scloss = scloss().cuda()
+        self.closs = closs().cuda()
 
         # define optimizer
         self.vae_opt = torch.optim.Adam(self.vae.parameters(), lr=self.config.vae_learning_rate)
@@ -119,13 +119,15 @@ class Strategy(object):
             self.vae.train()
             self.vae_opt.zero_grad()
 
-            data = data[0].cuda(async=self.config.async_loading)
+            origin_data = data['origin'].cuda(async=self.config.async_loading)
+            trans_data = data['trans'].cuda(async=self.config.async_loading)
 
-            data_recon, code = self.vae(data)
+            origin_recon, origin_code = self.vae(origin_data)
+            trans_recon, trans_code = self.vae(trans_data)
 
             # reconstruction loss
-            recon_loss = self.loss(data_recon, data)
-            code_loss = torch.mean(torch.abs(1 - torch.sum(code, dim=1)))
+            recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
+            code_loss = self.closs(origin_code, trans_code)
 
             loss = recon_loss + code_loss * 0.1
 
@@ -133,7 +135,7 @@ class Strategy(object):
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            centroid_set |= set(tuple(map(tuple, code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
+            centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
