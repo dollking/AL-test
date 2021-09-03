@@ -120,22 +120,24 @@ class ClassificationWithLoss(object):
         for _ in range(self.config.epoch):
             self.epoch += 1
             self.train_by_epoch()
+            self.test_by_epoch()
 
     def train_by_epoch(self):
         tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
 
+        self.task.train()
+        self.loss_module.train()
         avg_loss = AverageMeter()
         for curr_it, data in enumerate(tqdm_batch):
-            self.task.train()
             self.task_opt.zero_grad()
-
-            self.loss_module.train()
             self.loss_opt.zero_grad()
 
             inputs = data[0].cuda(async=self.config.async_loading)
             targets = data[1].cuda(async=self.config.async_loading)
 
             out, features = self.task(inputs)
+            target_loss = self.loss(out, targets, 10)
+
             if self.epoch > self.epochl:
                 for idx in range(len(features)):
                     features[idx] = features[idx].detach()
@@ -143,7 +145,6 @@ class ClassificationWithLoss(object):
             pred_loss = self.loss_module(features)
             pred_loss = pred_loss.view([-1, ])
 
-            target_loss = self.loss(out, targets, 10)
             loss = self.r_loss(pred_loss, target_loss) + torch.mean(target_loss)
 
             loss.backward()
@@ -154,8 +155,10 @@ class ClassificationWithLoss(object):
 
         tqdm_batch.close()
 
-        self.task_scheduler.step(avg_loss.val)
+        self.task_scheduler.step()
+        self.loss_scheduler.step()
 
+    def test_by_epoch(self):
         with torch.no_grad():
             tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
 
@@ -163,6 +166,7 @@ class ClassificationWithLoss(object):
             correct = 0
             for curr_it, data in enumerate(tqdm_batch):
                 self.task.eval()
+                self.loss_module.eval()
 
                 inputs = data[0].cuda(async=self.config.async_loading)
                 targets = data[1].cuda(async=self.config.async_loading)
