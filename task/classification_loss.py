@@ -109,8 +109,22 @@ class ClassificationWithLoss(object):
 
         torch.save(state, tmp_name)
 
+    def load_checkpoint(self):
+        try:
+            filename = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'task.pth.tar')
+            print("Loading checkpoint '{}'".format(filename))
+            checkpoint = torch.load(filename)
+
+            self.task.load_state_dict(checkpoint['task_state_dict'])
+            self.loss_module.load_state_dict(checkpoint['loss_state_dict'])
+
+        except OSError as e:
+            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
+            print("**First time to train**")
+
     def run(self):
         try:
+            self.load_checkpoint()
             self.train()
 
         except KeyboardInterrupt:

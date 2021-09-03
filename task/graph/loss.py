@@ -9,7 +9,7 @@ class CELoss(nn.Module):
         self.loss = nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, logit, target, num_classes):
-        return self.loss(logit, target.to(torch.int64))
+        return self.loss(logit, target)
 
 
 class RankingLoss(nn.Module):

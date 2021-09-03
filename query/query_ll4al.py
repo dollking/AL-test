@@ -77,12 +77,11 @@ class Query(object):
                                     pin_memory=self.config.pin_memory, sampler=Sampler(subset))
             tqdm_batch = tqdm(dataloader, total=len(dataloader))
 
+            self.task.eval()
+            self.loss_module.eval()
             uncertainty = torch.tensor([]).cuda()
             with torch.no_grad():
                 for curr_it, data in enumerate(tqdm_batch):
-                    self.task.eval()
-                    self.loss_module.eval()
-
                     data = data[0].cuda(async=self.config.async_loading)
 
                     _, features = self.task(data)
@@ -92,7 +91,9 @@ class Query(object):
                     uncertainty = torch.cat([uncertainty, pred_loss], 0)
 
                 tqdm_batch.close()
+
             uncertainty = uncertainty.cpu()
+
             arg = np.argsort(uncertainty)
 
             sample_set = list(torch.tensor(subset)[arg][-sample_size:].numpy())
