@@ -28,8 +28,11 @@ class Strategy(object):
         self.best = 999999.0
 
         self.train_transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(size=32, padding=4),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            transforms.RandomErasing(p=0.6, scale=(0.05, 0.2), ratio=(0.3, 3.3)),
         ])
 
         self.batch_size = self.config.batch_size * 8
