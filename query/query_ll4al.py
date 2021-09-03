@@ -33,7 +33,7 @@ class Query(object):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
 
-        self.batch_size = self.config.vae_batch_size
+        self.batch_size = self.config.batch_size
 
         # define dataloader
         if self.config.data_name == 'cifar10':
@@ -49,7 +49,6 @@ class Query(object):
 
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
-        self.vae = nn.DataParallel(self.vae, device_ids=gpu_list)
         self.task = nn.DataParallel(self.task, device_ids=gpu_list)
         self.loss_module = nn.DataParallel(self.loss_module, device_ids=gpu_list)
 
