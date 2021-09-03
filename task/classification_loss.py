@@ -75,10 +75,8 @@ class ClassificationWithLoss(object):
                                         momentum=self.config.momentum, weight_decay=self.config.wdecay)
 
         # define optimize scheduler
-        self.task_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.task_opt, mode='min',
-                                                                         factor=0.8, cooldown=8)
-        self.loss_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.loss_opt, mode='min',
-                                                                         factor=0.8, cooldown=8)
+        self.task_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.task_opt, milestones=self.config.milestones)
+        self.loss_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.loss_opt, milestones=self.config.milestones)
 
         # initialize train counter
         self.epoch = 0
@@ -145,8 +143,8 @@ class ClassificationWithLoss(object):
             pred_loss = self.loss_module(features)
             pred_loss = pred_loss.view([-1, ])
 
-            loss = self.loss(out, targets, 10)
-            loss = self.r_loss(loss, pred_loss) + torch.mean(loss)
+            target_loss = self.loss(out, targets, 10)
+            loss = self.r_loss(pred_loss, target_loss) + torch.mean(target_loss)
 
             loss.backward()
             self.task_opt.step()
