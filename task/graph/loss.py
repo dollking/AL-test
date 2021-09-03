@@ -18,8 +18,8 @@ class RankingLoss(nn.Module):
 
         self.bce = nn.BCELoss()
 
-    def forward(self, target, pred_loss):
-        target = (target - target.flip(0))[:target.size(0) // 2]
+    def forward(self, pred_loss, target_loss):
+        target = (target_loss - target_loss.flip(0))[:target_loss.size(0) // 2]
         target = target.detach()
         ones = torch.sign(torch.clamp(target, min=0))
 
