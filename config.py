@@ -19,6 +19,7 @@ class Config(object):
 
     epoch = 300
     epochl = 140
+    milestones = [160]
     batch_size = 128
 
     learning_rate = 0.1
@@ -36,8 +37,8 @@ class Config(object):
     vae_num_residual_hiddens = 32
     vae_num_residual_layers = 2
 
-    vae_embedding_dim = 64
-    vae_num_embeddings = 100
+    vae_embedding_dim = 16
+    vae_num_embeddings = 300
 
     vae_commitment_cost = 0.25
 
