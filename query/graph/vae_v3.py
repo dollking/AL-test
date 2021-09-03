@@ -213,14 +213,13 @@ class VAE(nn.Module):
                                 num_residual_hiddens)
 
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.tanh = nn.Tanh()
 
     def forward(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv_1(z)
         
         _z = self._pre_vq_conv_2(z)
-        _z = self.tanh(self.avg_pool(_z))
+        _z = torch.sign(self.avg_pool(_z))
         
         loss, quantized, perplexity, encoding_indices, inverse_distances = self._vq_vae(_z)
         

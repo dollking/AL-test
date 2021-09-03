@@ -123,10 +123,10 @@ class Query(object):
             tqdm_batch.close()
 
         for i in data_dict:
-            print(i, len(data_dict[i]), end=' / ')
+            print(len(data_dict[i]), end=' / ')
         print()
 
-        subset = []
+        sample_set = []
         total_remain = []
         quota = int(sample_size / len(data_dict))
         for i in data_dict:
@@ -134,32 +134,32 @@ class Query(object):
                 tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
 
                 if len(tmp_list) > quota:
-                    subset += list(np.array(tmp_list)[:quota, 1])
+                    sample_set += list(np.array(tmp_list)[:quota, 1])
                     total_remain += tmp_list[quota:]
                 else:
-                    subset += list(np.array(tmp_list)[:, 1])
+                    sample_set += list(np.array(tmp_list)[:, 1])
 
             else:
                 tmp_list = set(np.array(data_dict[i])[:, 1])
 
                 if len(tmp_list) > quota:
                     sampled = random.sample(tmp_list, quota)
-                    subset += sampled
+                    sample_set += sampled
                     total_remain += list(tmp_list - set(sampled))
                 else:
-                    subset += list(tmp_list)
+                    sample_set += list(tmp_list)
 
         if step_cnt:
             tmp_list = sorted(total_remain, key=lambda x: x[0], reverse=True)
-            subset += list(np.array(tmp_list)[:(sample_size - len(subset)), 1])
+            sample_set += list(np.array(tmp_list)[:(sample_size - len(sample_set)), 1])
 
         else:
-            subset += random.sample(total_remain, sample_size - len(subset))
+            sample_set += random.sample(total_remain, sample_size - len(sample_set))
 
         print('cent cnt:', len(set(data_dict.keys())))
 
-        if len(set(subset)) < sample_size:
-            print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(subset)))
+        if len(set(sample_set)) < sample_size:
+            print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
 
-        self.labeled += subset
-        self.unlabeled = list(set(self.unlabeled) - set(subset))
+        self.labeled += sample_set
+        self.unlabeled = list(set(self.unlabeled) - set(sample_set))
