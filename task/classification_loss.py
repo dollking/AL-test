@@ -12,7 +12,7 @@ from torchvision.datasets import CIFAR10, CIFAR100
 from .graph.resnet import ResNet18 as resnet
 from .graph.lossnet import LossNet as lossnet
 from .graph.loss import CELoss as loss
-from .graph.loss import RankingLoss as r_loss
+from .graph.loss import LossPredLoss as r_loss
 from data.sampler import Sampler
 
 from utils.metrics import AverageMeter
@@ -27,33 +27,34 @@ class ClassificationWithLoss(object):
         self.step_cnt = step_cnt
         self.best_acc = 0.0
 
-        self.train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=32, padding=4),
-            transforms.ToTensor(),
-            transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
-        ])
-
-        self.test_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
-        ])
-
         self.batch_size = self.config.batch_size
 
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        if self.config.data_name == 'cifar10':
-            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.train_transform)
-            self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                        train=False, download=True, transform=self.test_transform)
-        elif self.config.data_name == 'cifar100':
-            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.train_transform)
-            self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                        train=False, download=True, transform=self.test_transform)
+        if 'cifar' in self.config.data_name:
+            self.train_transform = transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomCrop(size=32, padding=4),
+                transforms.ToTensor(),
+                transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
+            ])
+
+            self.test_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
+            ])
+
+            if self.config.data_name == 'cifar10':
+                self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                             train=True, download=True, transform=self.train_transform)
+                self.test_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                            train=False, download=True, transform=self.test_transform)
+            elif self.config.data_name == 'cifar100':
+                self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                             train=True, download=True, transform=self.train_transform)
+                self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                            train=False, download=True, transform=self.test_transform)
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
                                        pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))

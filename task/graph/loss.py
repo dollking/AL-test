@@ -12,11 +12,9 @@ class CELoss(nn.Module):
         return self.loss(logit, target)
 
 
-class RankingLoss(nn.Module):
+class LossPredLoss(nn.Module):
     def __init__(self):
         super().__init__()
-
-        self.bce = nn.BCELoss()
 
     def forward(self, pred_loss, target_loss):
         pred_loss = (pred_loss - pred_loss.flip(0))[:len(pred_loss)//2]
@@ -30,3 +28,20 @@ class RankingLoss(nn.Module):
         loss = loss / pred_loss.size(0)
 
         return loss
+
+
+class RankingLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.bce = nn.BCELoss()
+
+    def forward(self, pred_loss, target_loss):
+        target = (target_loss - target_loss.flip(0))[:target_loss.size(0) // 2]
+        target = target.detach()
+        ones = torch.sign(torch.clamp(target, min=0))
+
+        pred_loss = (pred_loss - pred_loss.flip(0))[:pred_loss.size(0) // 2]
+        pred_loss = torch.sigmoid(pred_loss)
+
+        return self.bce(pred_loss, ones)

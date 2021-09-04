@@ -6,6 +6,7 @@ from task.classification_loss import ClassificationWithLoss as Task
 def main(cycle_cnt):
     config = Config()
     query = Query(config)
+    task = Task(config)
 
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):
@@ -15,8 +16,7 @@ def main(cycle_cnt):
         # train a task model
         print('step {}: train data count - {}'.format(step_cnt + 1, len(query.labeled)))
 
-        task = Task(config, step_cnt, query.labeled)
-        task.run()
+        task.run(step_cnt, query.labeled)
 
         print('step {}: test accuracy - {}'.format(step_cnt + 1, task.best_acc))
 
