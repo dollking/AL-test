@@ -31,20 +31,21 @@ class Query(object):
         self.labeled = []
         self.unlabeled = [i for i in range(self.config.data_size)]
 
-        self.train_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
-
         self.batch_size = self.config.vae_batch_size
 
         # define dataloader
-        if self.config.data_name == 'cifar10':
-            self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                   train=True, download=True, transform=self.train_transform)
-        elif self.config.data_name == 'cifar100':
-            self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                    train=True, download=True, transform=self.train_transform)
+        if 'cifar' in self.config.data_name:
+            self.train_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
+            ])
+
+            if self.config.data_name == 'cifar10':
+                self.dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                       train=True, download=True, transform=self.train_transform)
+            elif self.config.data_name == 'cifar100':
+                self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                        train=True, download=True, transform=self.train_transform)
 
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,

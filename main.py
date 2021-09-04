@@ -15,7 +15,7 @@ def main(cycle_cnt):
         # train a task model
         print('step {}: train data count - {}'.format(step_cnt + 1, len(query.labeled)))
 
-        task = Task(config, step_cnt + 1, query.labeled)
+        task = Task(config, step_cnt, query.labeled)
         task.run()
 
         print('step {}: test accuracy - {}'.format(step_cnt + 1, task.best_acc))

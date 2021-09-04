@@ -27,22 +27,22 @@ class Strategy(object):
         self.config = config
         self.best = 999999.0
 
-        self.train_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
-
         self.batch_size = self.config.batch_size * 8
 
         self.logger = set_logger('train_epoch.log')
 
         # define dataloader
-        if self.config.data_name == 'cifar10':
-            self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
-                                         train=True, download=True, transform=self.train_transform)
-        elif self.config.data_name == 'cifar100':
-            self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
-                                          train=True, download=True, transform=self.train_transform)
+        if 'cifar' in self.config.data_name:
+            self.train_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
+            ])
+            if self.config.data_name == 'cifar10':
+                self.train_dataset = CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                             train=True, download=True, transform=self.train_transform)
+            elif self.config.data_name == 'cifar100':
+                self.train_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                              train=True, download=True, transform=self.train_transform)
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=2,
                                        pin_memory=self.config.pin_memory)
