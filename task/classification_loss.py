@@ -31,12 +31,12 @@ class ClassificationWithLoss(object):
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(size=32, padding=4),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
         ])
 
         self.test_transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
         ])
 
         self.batch_size = self.config.batch_size
@@ -124,7 +124,8 @@ class ClassificationWithLoss(object):
 
     def run(self):
         try:
-            self.load_checkpoint()
+            if self.step_cnt:
+                self.load_checkpoint()
             self.train()
 
         except KeyboardInterrupt:
@@ -134,7 +135,11 @@ class ClassificationWithLoss(object):
         for _ in range(self.config.epoch):
             self.epoch += 1
             self.train_by_epoch()
-            self.test_by_epoch()
+            
+            self.task_scheduler.step()
+            self.loss_scheduler.step()
+            
+        self.test_by_epoch()
 
     def train_by_epoch(self):
         tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
@@ -168,9 +173,6 @@ class ClassificationWithLoss(object):
             avg_loss.update(loss)
 
         tqdm_batch.close()
-
-        self.task_scheduler.step()
-        self.loss_scheduler.step()
 
     def test_by_epoch(self):
         with torch.no_grad():
