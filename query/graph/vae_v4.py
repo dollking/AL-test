@@ -144,8 +144,8 @@ class VAE(nn.Module):
         z = self._encoder(x)
         z = self._pre_vq_conv_1(z)
         
-        _z = self._pre_vq_conv_2(z) + 1e-4
-        _z = torch.sign(self.avg_pool(_z))
+        _z = self._pre_vq_conv_2(z)
+        _z = torch.sign(self.avg_pool(_z) + 1e-4)
 
         _, _, w, h = z.size()
         quantized = _z.repeat([1, 1, w, h])

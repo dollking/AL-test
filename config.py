@@ -17,8 +17,8 @@ class Config(object):
 
     gpu_cnt = 1
 
-    epoch = 300
-    epochl = 140
+    epoch = 200
+    epochl = 120
     milestones = [160]
     batch_size = 128
 
@@ -31,7 +31,7 @@ class Config(object):
 
     #############################################
     vae_batch_size = 1024
-    vae_epoch = 400
+    vae_epoch = 500
 
     vae_num_hiddens = 128
     vae_num_residual_hiddens = 32
