@@ -69,7 +69,6 @@ class VectorQuantizerEMA(nn.Module):
                      - 2 * torch.matmul(flat_input, self._embedding.weight.t()))
 
         # Encoding
-        inverse_distances = 1 / (distances + 1e-5)
         encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
         encodings = torch.zeros(encoding_indices.shape[0], self._num_embeddings, device=inputs.device)
         encodings.scatter_(1, encoding_indices, 1)
@@ -103,7 +102,7 @@ class VectorQuantizerEMA(nn.Module):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view([-1, ]), inverse_distances
+        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view([-1, ])
 
 
 class Encoder(nn.Module):
@@ -221,7 +220,7 @@ class VAE(nn.Module):
         _z = self._pre_vq_conv_2(z)
         _z = torch.sign(self.avg_pool(_z))
         
-        loss, quantized, perplexity, encoding_indices, inverse_distances = self._vq_vae(_z)
+        loss, quantized, perplexity, encoding_indices = self._vq_vae(_z)
         
         _, _, w, h = z.size()
         quantized = quantized.repeat([1, 1, w, h])
@@ -230,4 +229,4 @@ class VAE(nn.Module):
 
         x_recon = self._decoder(decoder_in)
 
-        return loss, x_recon, perplexity, encoding_indices, inverse_distances
+        return loss, x_recon, perplexity, encoding_indices

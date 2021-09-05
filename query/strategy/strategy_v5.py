@@ -122,12 +122,12 @@ class Strategy(object):
 
             data = data[0].cuda(async=self.config.async_loading)
             if self.epoch % 3:
-                _, data_recon, _ = self.vae(data)
+                _, data_recon, _ = self.vae(data, False)
 
                 recon_loss = self.loss(data_recon, data)
                 loss = recon_loss
             else:
-                vq_loss, data_recon, encoding_indices = self.vae(data, False)
+                vq_loss, data_recon, encoding_indices = self.vae(data)
 
                 recon_loss = self.loss(data_recon, data)
                 loss = recon_loss + vq_loss

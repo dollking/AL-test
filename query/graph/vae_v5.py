@@ -213,18 +213,19 @@ class VAE(nn.Module):
 
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
-    def forward(self, x, train_vae=True):
+    def forward(self, x, train_vq=True):
         z = self._encoder(x)
         z = self._pre_vq_conv_1(z)
 
         _z = self._pre_vq_conv_2(z)
         _z = torch.sign(self.avg_pool(_z))
 
-        if train_vae:
-            quantized, loss, encoding_indices = _z, None, None
-        else:
+        if train_vq:
             _z, z = _z.detach(), z.detach()
             loss, quantized, perplexity, encoding_indices = self._vq_vae(_z)
+
+        else:
+            quantized, loss, encoding_indices = _z, None, None
         
         _, _, w, h = z.size()
         quantized = quantized.repeat([1, 1, w, h])

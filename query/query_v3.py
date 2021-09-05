@@ -107,7 +107,7 @@ class Query(object):
 
                 data = data[0].cuda(async=self.config.async_loading)
 
-                _, _, _, encoding_indices, inverse_distances = self.vae(data)
+                _, _, _, encoding_indices = self.vae(data)
                 _, features = self.task(data)
                 pred_loss = self.loss_module(features)
                 
