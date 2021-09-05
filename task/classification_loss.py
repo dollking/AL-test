@@ -18,7 +18,8 @@ from data.sampler import Sampler
 from utils.metrics import AverageMeter
 from utils.train_utils import set_logger, count_model_prameters
 
-cudnn.benchmark = True
+cudnn.deterministic = True
+cudnn.benchmark = False
 
 
 class ClassificationWithLoss(object):

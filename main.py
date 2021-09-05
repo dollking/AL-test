@@ -13,7 +13,7 @@ def main(cycle_cnt):
         query.sampling(step_cnt)
 
         # train a task model
-        print('step {}: train data count - {}'.format(step_cnt + 1, len(query.labeled)))
+        print('step {}: train data count - {}'.format(step_cnt + 1, len(set(query.labeled))))
 
         task = Task(config, step_cnt, query.labeled)
         task.run()
