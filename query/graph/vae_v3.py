@@ -229,4 +229,4 @@ class VAE(nn.Module):
 
         x_recon = self._decoder(decoder_in)
 
-        return loss, x_recon, perplexity, encoding_indices
+        return loss, x_recon, encoding_indices
