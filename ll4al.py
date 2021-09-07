@@ -38,4 +38,4 @@ def main(cycle_cnt):
 
 if __name__ == '__main__':
     for i in range(10):
-        main(i)
+        main(i + 1)

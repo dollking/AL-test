@@ -52,7 +52,6 @@ class Strategy(object):
                                        pin_memory=self.config.pin_memory)
 
         # define models
-        self.task = resnet(self.config.num_classes).cuda()
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
                        self.config.vae_num_residual_hiddens, self.config.vae_num_embeddings,
                        self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_distance,
@@ -72,16 +71,9 @@ class Strategy(object):
         # initialize train counter
         self.epoch = 0
 
-        self.manual_seed = random.randint(10000, 99999)
-
-        torch.manual_seed(self.manual_seed)
-        torch.cuda.manual_seed_all(self.manual_seed)
-        random.seed(self.manual_seed)
-
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.vae = nn.DataParallel(self.vae, device_ids=gpu_list)
-        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
 
@@ -90,7 +82,6 @@ class Strategy(object):
                                             comment='VQ-VAE')
 
     def print_train_info(self):
-        print("seed: ", self.manual_seed)
         print('Number of generator parameters: {}'.format(count_model_prameters(self.vae)))
 
     def save_checkpoint(self):
@@ -113,14 +104,18 @@ class Strategy(object):
         for _ in range(self.config.vae_epoch):
             self.epoch += 1
             self.train_by_epoch()
+        self.save_checkpoint()
 
     def train_by_epoch(self):
         tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
 
         centroid_set = set()
         avg_loss = AverageMeter()
+        avg_code_loss = AverageMeter()
+        avg_balance_loss = AverageMeter()
+
+        self.vae.train()
         for curr_it, data in enumerate(tqdm_batch):
-            self.vae.train()
             self.vae_opt.zero_grad()
 
             origin_data = data['origin'].cuda(async=self.config.async_loading)
@@ -131,14 +126,17 @@ class Strategy(object):
 
             # reconstruction loss
             recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
-            code_loss = self.closs(origin_code, trans_code)
+            code_balance_loss, code_loss = self.closs(origin_code, trans_code)
 
-            loss = recon_loss + code_loss * 0.1
+            loss = recon_loss + code_balance_loss + code_loss
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
+            avg_code_loss.update(code_loss)
+            avg_balance_loss.update(code_balance_loss)
+
             centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
 
         tqdm_batch.close()
@@ -147,11 +145,19 @@ class Strategy(object):
         self.summary_writer.add_image('image/origin', origin_data[0], self.epoch)
         self.summary_writer.add_image('image/trans', trans_data[0], self.epoch)
         self.summary_writer.add_image('image/recon_origin', origin_recon[0], self.epoch)
-        self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
-        if avg_loss.val < self.best:
-            self.best = avg_loss.val
-            self.save_checkpoint()
+        self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
+        self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
+        self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
+
+    def get_code(self, inputs):
+        self.vae.eval()
+        with torch.no_grad():
+            inputs = inputs.cuda(async=self.config.async_loading)
+
+            _, code = self.vae(inputs)
+
+        return code
