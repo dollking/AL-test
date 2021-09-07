@@ -113,7 +113,7 @@ class Decoder(nn.Module):
 
 class VAE(nn.Module):
     def __init__(self, num_hiddens, num_residual_layers, num_residual_hiddens,
-                 num_embeddings, embedding_dim, commitment_cost, max_distance, decay=0):
+                 num_embeddings, embedding_dim, max_distance):
         super(VAE, self).__init__()
 
         self.max_distance = max_distance

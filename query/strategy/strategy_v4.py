@@ -54,8 +54,7 @@ class Strategy(object):
         # define models
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
                        self.config.vae_num_residual_hiddens, self.config.vae_num_embeddings,
-                       self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_distance,
-                       self.config.vae_decay).cuda()
+                       self.config.vae_embedding_dim, self.config.vae_distance).cuda()
 
         # define loss
         self.loss = loss().cuda()
@@ -79,7 +78,7 @@ class Strategy(object):
 
         self.print_train_info()
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
-                                            comment='VQ-VAE')
+                                            comment='AE-HASH')
 
     def print_train_info(self):
         print('Number of generator parameters: {}'.format(count_model_prameters(self.vae)))
