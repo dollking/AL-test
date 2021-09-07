@@ -26,11 +26,10 @@ def main(cycle_cnt):
         query.sampling(step_cnt, task)
 
         # train a task model
-        print('step {}: train data count - {}'.format(step_cnt + 1, len(set(query.labeled))))
-
         task.run(query.labeled)
 
-        print('step {}: test accuracy - {}'.format(step_cnt + 1, task.best_acc))
+        print(f'trial-{cycle_cnt} / step {step_cnt + 1}: train data count - {len(set(query.labeled))}')
+        print(f'test accuracy - {task.best_acc}')
 
         fp.write(f'{task.best_acc}\n')
 
