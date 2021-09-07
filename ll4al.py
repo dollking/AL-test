@@ -8,17 +8,15 @@ from task.classification_loss import ClassificationWithLoss as Task
 
 cudnn.deterministic = True
 
+random.seed(9410)
+torch.manual_seed(9410)
+torch.cuda.manual_seed_all(9410)
+
 
 def main(cycle_cnt):
     config = Config()
     query = Query(config)
     task = Task(config)
-
-    manual_seed = random.randint(10000, 99999)
-
-    random.seed(manual_seed)
-    torch.manual_seed(manual_seed)
-    torch.cuda.manual_seed_all(manual_seed)
 
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):

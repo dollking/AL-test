@@ -12,7 +12,7 @@ from torchvision.datasets import CIFAR100, CIFAR10
 
 from data.sampler import Sampler
 
-cudnn.benchmark = True
+cudnn.benchmark = False
 
 
 class Query(object):

@@ -19,7 +19,7 @@ from utils.metrics import AverageMeter, UncertaintyScore
 from utils.train_utils import set_logger, count_model_prameters
 from tensorboardX import SummaryWriter
 
-cudnn.benchmark = True
+cudnn.benchmark = False
 
 
 class Strategy(object):

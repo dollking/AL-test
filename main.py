@@ -9,18 +9,16 @@ from task.classification_loss import ClassificationWithLoss as Task
 
 cudnn.deterministic = True
 
+random.seed(9410)
+torch.manual_seed(9410)
+torch.cuda.manual_seed_all(9410)
+
 
 def main(cycle_cnt):
     config = Config()
     query = Query(config)
     strategy = Strategy(config)
     task = Task(config)
-
-    manual_seed = random.randint(10000, 99999)
-
-    random.seed(manual_seed)
-    torch.manual_seed(manual_seed)
-    torch.cuda.manual_seed_all(manual_seed)
 
     strategy.run()
 
