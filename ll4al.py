@@ -1,12 +1,24 @@
+import random
+import torch
+from torch.backends import cudnn
+
 from config import Config
 from query.query_ll4al import Query
 from task.classification_loss import ClassificationWithLoss as Task
+
+cudnn.deterministic = True
 
 
 def main(cycle_cnt):
     config = Config()
     query = Query(config)
     task = Task(config)
+
+    manual_seed = random.randint(10000, 99999)
+
+    random.seed(manual_seed)
+    torch.manual_seed(manual_seed)
+    torch.cuda.manual_seed_all(manual_seed)
 
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):

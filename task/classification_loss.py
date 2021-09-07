@@ -16,9 +16,9 @@ from .graph.loss import LossPredLoss as r_loss
 from data.sampler import Sampler
 
 from utils.metrics import AverageMeter
-from utils.train_utils import set_logger, count_model_prameters
+from utils.train_utils import count_model_prameters
 
-cudnn.deterministic = True
+
 cudnn.benchmark = False
 
 
@@ -63,12 +63,6 @@ class ClassificationWithLoss(object):
 
         self.epochl = self.config.epochl
 
-        self.manual_seed = random.randint(10000, 99999)
-
-        torch.manual_seed(self.manual_seed)
-        torch.cuda.manual_seed_all(self.manual_seed)
-        random.seed(self.manual_seed)
-
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.task = nn.DataParallel(self.task, device_ids=gpu_list)
@@ -77,7 +71,6 @@ class ClassificationWithLoss(object):
         self.print_train_info()
 
     def print_train_info(self):
-        print("seed: ", self.manual_seed)
         print('Number of generator parameters: {}'.format(count_model_prameters(self.task)))
 
     def save_checkpoint(self):
