@@ -38,7 +38,7 @@ class Strategy(object):
                 transforms.RandomCrop(size=32, padding=4),
                 transforms.ToTensor(),
                 transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]),
-                transforms.RandomErasing(p=0.6, scale=(0.05, 0.2), ratio=(0.3, 3.3)),
+                transforms.RandomErasing(p=0.6, scale=(0.03, 0.08), ratio=(0.3, 3.3)),
             ])
 
             if self.config.data_name == 'cifar10':
