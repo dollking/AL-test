@@ -5,14 +5,10 @@ from tqdm import tqdm
 import numpy as np
 
 import torch
-from torch import nn
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
-
-from task.graph.resnet import ResNet18 as resnet
-from task.graph.lossnet import LossNet as lossnet
 
 from data.sampler import Sampler
 
@@ -42,28 +38,6 @@ class Query(object):
         elif self.config.data_name == 'cifar100':
             self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                     train=True, download=True, transform=self.train_transform)
-
-        # define models
-        self.task = resnet(self.config.num_classes).cuda()
-        self.loss_module = lossnet().cuda()
-
-        # parallel setting
-        gpu_list = list(range(self.config.gpu_cnt))
-        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
-        self.loss_module = nn.DataParallel(self.loss_module, device_ids=gpu_list)
-
-    def load_checkpoint(self):
-        try:
-            filename = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'task.pth.tar')
-            print("Loading checkpoint '{}'".format(filename))
-            checkpoint = torch.load(filename)
-
-            self.task.load_state_dict(checkpoint['task_state_dict'])
-            self.loss_module.load_state_dict(checkpoint['loss_state_dict'])
-
-        except OSError as e:
-            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
-            print("**First time to train**")
 
     def sampling(self, step_cnt, task):
         sample_size = self.budget if step_cnt else self.initial_size
