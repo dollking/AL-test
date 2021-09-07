@@ -23,14 +23,11 @@ cudnn.benchmark = False
 
 
 class ClassificationWithLoss(object):
-    def __init__(self, config, step_cnt, sample_list):
+    def __init__(self, config):
         self.config = config
-        self.step_cnt = step_cnt
         self.best_acc = 0.0
 
         self.batch_size = self.config.batch_size
-
-        self.logger = set_logger('train_epoch.log')
 
         # define dataloader
         if 'cifar' in self.config.data_name:
@@ -57,8 +54,6 @@ class ClassificationWithLoss(object):
                 self.test_dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                             train=False, download=True, transform=self.test_transform)
 
-        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
-                                       pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=1,
                                       pin_memory=self.config.pin_memory)
 
@@ -66,22 +61,6 @@ class ClassificationWithLoss(object):
         self.task = resnet(self.config.num_classes).cuda()
         self.loss_module = lossnet().cuda()
 
-        # define loss
-        self.loss = loss().cuda()
-        self.r_loss = r_loss().cuda()
-
-        # define optimizer
-        self.task_opt = torch.optim.SGD(self.task.parameters(), lr=self.config.learning_rate,
-                                        momentum=self.config.momentum, weight_decay=self.config.wdecay)
-        self.loss_opt = torch.optim.SGD(self.loss_module.parameters(), lr=self.config.learning_rate,
-                                        momentum=self.config.momentum, weight_decay=self.config.wdecay)
-
-        # define optimize scheduler
-        self.task_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.task_opt, milestones=self.config.milestones)
-        self.loss_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.loss_opt, milestones=self.config.milestones)
-
-        # initialize train counter
-        self.epoch = 0
         self.epochl = self.config.epochl
 
         self.manual_seed = random.randint(10000, 99999)
@@ -111,40 +90,46 @@ class ClassificationWithLoss(object):
 
         torch.save(state, tmp_name)
 
-    def load_checkpoint(self):
+    def set_train(self):
+        # define loss
+        self.loss = loss().cuda()
+        self.r_loss = r_loss().cuda()
+
+        # define optimizer
+        self.task_opt = torch.optim.SGD(self.task.parameters(), lr=self.config.learning_rate,
+                                        momentum=self.config.momentum, weight_decay=self.config.wdecay)
+        self.loss_opt = torch.optim.SGD(self.loss_module.parameters(), lr=self.config.learning_rate,
+                                        momentum=self.config.momentum, weight_decay=self.config.wdecay)
+
+        # define optimize scheduler
+        self.task_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.task_opt, milestones=self.config.milestones)
+        self.loss_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.loss_opt, milestones=self.config.milestones)
+
+        # initialize train counter
+        self.epoch = 0
+
+    def run(self, sample_list):
+        data_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
+                                 pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         try:
-            filename = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'task.pth.tar')
-            print("Loading checkpoint '{}'".format(filename))
-            checkpoint = torch.load(filename)
-
-            self.task.load_state_dict(checkpoint['task_state_dict'])
-            self.loss_module.load_state_dict(checkpoint['loss_state_dict'])
-
-        except OSError as e:
-            print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
-            print("**First time to train**")
-
-    def run(self):
-        try:
-            if self.step_cnt:
-                self.load_checkpoint()
-            self.train()
+            self.set_train()
+            self.train(data_loader)
 
         except KeyboardInterrupt:
             print("You have entered CTRL+C.. Wait to finalize")
 
-    def train(self):
+    def train(self, data_loader):
         for _ in range(self.config.epoch):
             self.epoch += 1
-            self.train_by_epoch()
+            self.train_by_epoch(data_loader)
             
             self.task_scheduler.step()
             self.loss_scheduler.step()
             
         self.test_by_epoch()
 
-    def train_by_epoch(self):
-        tqdm_batch = tqdm(self.train_loader, leave=False, total=len(self.train_loader))
+    def train_by_epoch(self, data_loader):
+        tqdm_batch = tqdm(data_loader, leave=False, total=len(data_loader))
 
         self.task.train()
         self.loss_module.train()
@@ -199,3 +184,16 @@ class ClassificationWithLoss(object):
             if correct / total > self.best_acc:
                 self.best_acc = correct / total
                 self.save_checkpoint()
+
+    def get_result(self, inputs):
+        self.task.eval()
+        self.loss_module.eval()
+        with torch.no_grad():
+            inputs = inputs.cuda(async=self.config.async_loading)
+
+            out, features = self.task(inputs)
+            pred_loss = self.loss_module(features)
+
+            pred_loss = pred_loss.view([-1, ])
+
+        return out, pred_loss

@@ -65,35 +65,27 @@ class Query(object):
             print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_directory))
             print("**First time to train**")
 
-    def sampling(self, step_cnt):
+    def sampling(self, step_cnt, task):
         sample_size = self.budget if step_cnt else self.initial_size
         random.shuffle(self.unlabeled)
 
         if step_cnt:
-            self.load_checkpoint()
             subset = self.unlabeled[:sample_size * 10]
 
             dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                     pin_memory=self.config.pin_memory, sampler=Sampler(subset))
-            tqdm_batch = tqdm(dataloader, total=len(dataloader))
 
-            self.task.eval()
-            self.loss_module.eval()
             uncertainty = torch.tensor([]).cuda()
-            with torch.no_grad():
-                for curr_it, data in enumerate(tqdm_batch):
-                    data = data[0].cuda(async=self.config.async_loading)
+            tqdm_batch = tqdm(dataloader, total=len(dataloader))
+            for curr_it, data in enumerate(tqdm_batch):
+                data = data[0].cuda(async=self.config.async_loading)
 
-                    _, features = self.task(data)
-                    pred_loss = self.loss_module(features)
-                    pred_loss = pred_loss.view([-1, ])
+                _, pred_loss = task.get_result(data)
 
-                    uncertainty = torch.cat([uncertainty, pred_loss], 0)
-
-                tqdm_batch.close()
+                uncertainty = torch.cat([uncertainty, pred_loss], 0)
+            tqdm_batch.close()
 
             uncertainty = uncertainty.cpu()
-
             arg = np.argsort(uncertainty)
 
             sample_set = list(torch.tensor(subset)[arg][-sample_size:].numpy())
