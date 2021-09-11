@@ -22,7 +22,7 @@ class Residual(nn.Module):
 
 
 class Extract(nn.Module):
-    def __int__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels):
         super(Extract, self).__init__()
 
         self.conv = nn.Conv2d(in_channels=in_channels,
