@@ -159,6 +159,6 @@ class Strategy(object):
     def get_code(self, inputs):
         self.hashnet.eval()
         with torch.no_grad():
-            _, code = self.hashnet(inputs)
+            logit = self.hashnet(inputs)
 
-        return code
+        return torch.sign(logit)
