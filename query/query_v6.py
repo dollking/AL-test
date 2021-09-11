@@ -48,8 +48,8 @@ class Query(object):
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
-            code = strategy.get_code(data)
-            _, _, pred_loss = task.get_result(data)
+            _, features, pred_loss = task.get_result(data)
+            code = strategy.get_code(features)
 
             code = tuple(map(tuple, code.view([-1, self.config.vae_embedding_dim]).cpu().tolist()))
             pred_loss = pred_loss.cpu().numpy()

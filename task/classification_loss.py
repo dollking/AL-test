@@ -1,5 +1,4 @@
 import os
-import random
 from tqdm import tqdm
 
 import torch
@@ -189,4 +188,4 @@ class ClassificationWithLoss(object):
 
             pred_loss = pred_loss.view([-1, ])
 
-        return out, pred_loss
+        return out, features, pred_loss

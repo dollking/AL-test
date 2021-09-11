@@ -34,3 +34,18 @@ class CodeLoss(nn.Module):
         code_loss = self.loss(trans_code, origin_code.detach())
 
         return code_balance_loss, code_loss
+
+
+class HashLoss(nn.Module):
+    def __int__(self):
+        super(HashLoss, self).__init__()
+
+    def forward(self, code, cls, m):
+        y = (cls.unsqueeze(0) != cls.unsqueeze(1)).float().view(-1)
+        dist = ((code.unsqueeze(0) - code.unsqueeze(1)) ** 2).sum(dim=2).view(-1)
+
+        loss = (1 - y) / 2 * dist + y / 2 * (m - dist).clamp(min=0)
+
+        loss = loss.mean() + 0.01 * (code.abs() - 1).abs().sum(dim=1).mean() * 2
+
+        return loss
