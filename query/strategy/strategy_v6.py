@@ -159,8 +159,6 @@ class Strategy(object):
     def get_code(self, inputs):
         self.hashnet.eval()
         with torch.no_grad():
-            inputs = inputs.cuda(async=self.config.async_loading)
-
             _, code = self.hashnet(inputs)
 
         return code

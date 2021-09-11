@@ -52,7 +52,8 @@ class Hash(nn.Module):
     def _make_layer(self, in_channel, repeat):
         layers = []
         for i in range(repeat):
-            layers.append(Extract(in_channel * (2 ** i), in_channel * (2 ** (i + 1))))
+            layers.append(Extract(in_channel, in_channel * 2))
+            in_channel *= 2
         layers.append(Residual(in_channel * (2 ** repeat)))
         return nn.Sequential(*layers)
 
