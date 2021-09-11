@@ -86,7 +86,7 @@ class Strategy(object):
 
         torch.save(state, tmp_name)
 
-    def run(self):
+    def run(self, task, sample_list):
         try:
             self.train(task, sample_list)
 
