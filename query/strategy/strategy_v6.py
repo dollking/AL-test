@@ -88,7 +88,7 @@ class Strategy(object):
 
     def run(self):
         try:
-            self.train()
+            self.train(task, sample_list)
 
         except KeyboardInterrupt:
             print("You have entered CTRL+C.. Wait to finalize")
