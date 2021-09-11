@@ -37,7 +37,14 @@ class Query(object):
                                         train=True, download=True, transform=self.train_transform)
 
     def sampling(self, step_cnt, strategy, task):
-        sample_size = self.budget if step_cnt else self.initial_size
+        if not step_cnt:
+            random.shuffle(self.unlabeled)
+            self.labeled = self.unlabeled[:self.initial_size]
+            self.unlabeled = self.unlabeled[self.initial_size:]
+
+            return
+
+        sample_size = self.budget
 
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
