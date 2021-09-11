@@ -114,7 +114,6 @@ class Strategy(object):
         avg_code_loss = AverageMeter()
         avg_balance_loss = AverageMeter()
 
-        task.eval()
         self.hashnet.train()
         for curr_it, data in enumerate(tqdm_batch):
             self.hashnet_opt.zero_grad()
