@@ -37,15 +37,16 @@ class Extract(nn.Module):
 
 
 class Hash(nn.Module):
-    def __init__(self, code_dim, channels=[64, 128, 256, 512]):
+    def __init__(self, code_dim, channels=[512, 256, 128, 64]):
         super(Hash, self).__init__()
 
         self.channels = channels
-        self.module1 = self._make_layer(self.channels[0], 3)
-        self.module2 = self._make_layer(self.channels[1], 2)
-        self.module3 = self._make_layer(self.channels[2], 1)
+        self.module1 = self._make_layer(self.channels[3], 3)
+        self.module2 = self._make_layer(self.channels[2], 2)
+        self.module3 = self._make_layer(self.channels[1], 1)
+        self.module4 = self._make_layer(self.channels[0], 0)
 
-        self.linear = nn.Linear(4 * self.channels[3], code_dim)
+        self.linear = nn.Linear(4 * self.channels[0], code_dim)
 
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
@@ -58,9 +59,10 @@ class Hash(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        feature1 = self.avg_pool(self.module1(x[0].detach())).view([-1, self.channels[3]])
-        feature2 = self.avg_pool(self.module2(x[1].detach())).view([-1, self.channels[3]])
-        feature3 = self.avg_pool(self.module3(x[2].detach())).view([-1, self.channels[3]])
+        feature1 = self.avg_pool(self.module1(x[3].detach())).view([-1, self.channels[3]])
+        feature2 = self.avg_pool(self.module2(x[2].detach())).view([-1, self.channels[3]])
+        feature3 = self.avg_pool(self.module3(x[1].detach())).view([-1, self.channels[3]])
+        feature4 = self.avg_pool(self.module3(x[0].detach())).view([-1, self.channels[3]])
         feature4 = self.avg_pool(x[3]).view([-1, self.channels[3]])
 
         feature = torch.cat([feature1, feature2, feature3, feature4], dim=1)
