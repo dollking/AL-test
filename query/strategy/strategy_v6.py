@@ -122,10 +122,10 @@ class Strategy(object):
             trans_data = data['trans'].cuda(async=self.config.async_loading)
             target = data['target'].cuda(async=self.config.async_loading)
 
-            _, origin_features = task.get_result(origin_data)
+            _, origin_features, _ = task.get_result(origin_data)
             origin_logit = self.hashnet(origin_features)
 
-            _, trans_features = task(trans_data)
+            _, trans_features, _ = task(trans_data)
             trans_logit = self.hashnet(trans_features)
 
             code_balance_loss, code_loss = self.closs(origin_logit, trans_logit)
