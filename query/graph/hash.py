@@ -63,7 +63,6 @@ class Hash(nn.Module):
         feature2 = self.avg_pool(self.module2(x[2].detach())).view([-1, self.channels[3]])
         feature3 = self.avg_pool(self.module3(x[1].detach())).view([-1, self.channels[3]])
         feature4 = self.avg_pool(self.module3(x[0].detach())).view([-1, self.channels[3]])
-        feature4 = self.avg_pool(x[3]).view([-1, self.channels[3]])
 
         feature = torch.cat([feature1, feature2, feature3, feature4], dim=1)
 
