@@ -125,7 +125,7 @@ class Strategy(object):
             _, origin_features, _ = task.get_result(origin_data)
             origin_logit = self.hashnet(origin_features)
 
-            _, trans_features, _ = task(trans_data)
+            _, trans_features, _ = task.get_result(trans_data)
             trans_logit = self.hashnet(trans_features)
 
             code_balance_loss, code_loss = self.closs(origin_logit, trans_logit)
