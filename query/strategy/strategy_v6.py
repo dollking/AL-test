@@ -128,7 +128,7 @@ class Strategy(object):
             _, trans_features, _ = task.get_result(trans_data)
             trans_logit = self.hashnet(trans_features)
 
-            code_balance_loss, code_loss = self.closs(torch.sign(origin_logit), torch.sign(trans_logit))
+            code_balance_loss, code_loss = self.closs(origin_logit, trans_logit)
             loss = code_balance_loss + code_loss
 
             if self.epoch % 2:
@@ -138,19 +138,21 @@ class Strategy(object):
             loss.backward()
             self.hashnet_opt.step()
 
-            avg_loss.update(loss)
-            avg_code_loss.update(code_loss)
-            avg_balance_loss.update(code_balance_loss)
+            if self.epoch % 2:
+                avg_loss.update(loss)
+                avg_code_loss.update(code_loss)
+                avg_balance_loss.update(code_balance_loss)
 
-            origin_code = torch.sign(origin_logit)
-            centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
+                origin_code = torch.sign(origin_logit)
+                centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
 
         tqdm_batch.close()
         self.hashnet_scheduler.step(avg_loss.val)
 
-        self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
-        self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
-        self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
+        if self.epoch % 2:
+            self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
+            self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
+            self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
