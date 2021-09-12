@@ -128,7 +128,7 @@ class Strategy(object):
             _, trans_features, _ = task.get_result(trans_data)
             trans_logit = self.hashnet(trans_features)
 
-            code_balance_loss, code_loss = self.closs(origin_logit, trans_logit)
+            code_balance_loss, code_loss = self.closs(torch.sign(origin_logit), torch.sign(trans_logit))
             loss = code_balance_loss + code_loss
 
             if self.epoch % 2:

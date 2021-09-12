@@ -28,13 +28,10 @@ class CodeLoss(nn.Module):
 
         self.loss = nn.MSELoss()
 
-    def forward(self, origin_logit, trans_logit):
-        origin_code = torch.sign(origin_logit)
-        trans_code = torch.sign(trans_logit)
-
+    def forward(self, origin_code, trans_code):
         code_balance_loss = (torch.mean(torch.abs(torch.sum(origin_code, dim=1))) +
                              torch.mean(torch.abs(torch.sum(trans_code, dim=1)))) / 2
-        code_loss = self.loss(trans_logit, origin_logit.detach())
+        code_loss = self.loss(trans_code, origin_code.detach())
 
         return code_balance_loss, code_loss
 
