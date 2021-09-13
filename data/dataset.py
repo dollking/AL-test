@@ -43,4 +43,4 @@ class Dataset_CIFAR100(CIFAR100):
         origin = transforms.ToTensor()(origin)
         origin = transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])(origin)
 
-        return {'origin': origin, 'trans': trans}
+        return {'origin': origin, 'trans': trans, 'target': target}
