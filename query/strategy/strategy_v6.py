@@ -179,7 +179,7 @@ class Strategy(object):
         with torch.no_grad():
             for curr_it, data in enumerate(tqdm_train):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
-                target = data['target']
+                target = data['target'].cuda(async=self.config.async_loading)
 
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
@@ -192,7 +192,7 @@ class Strategy(object):
 
             for curr_it, data in enumerate(tqdm_test):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
-                target = data['target']
+                target = data['target'].cuda(async=self.config.async_loading)
 
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
