@@ -14,7 +14,7 @@ from query.graph.loss import CodeLoss as closs
 from data.dataset import Dataset_CIFAR10, Dataset_CIFAR100
 from data.sampler import Sampler
 
-from utils.metrics import AverageMeter
+from utils.metrics import AverageMeter, mAP
 from utils.train_utils import set_logger, count_model_prameters
 from tensorboardX import SummaryWriter
 
@@ -43,26 +43,16 @@ class Strategy(object):
             if self.config.data_name == 'cifar10':
                 self.train_dataset = Dataset_CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
                                                      train=True, download=True, transform=self.train_transform)
+                self.test_dataset = Dataset_CIFAR10(os.path.join(self.config.root_path, self.config.data_directory),
+                                                    train=False, download=True, transform=self.train_transform)
             elif self.config.data_name == 'cifar100':
                 self.train_dataset = Dataset_CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                                       train=True, download=True, transform=self.train_transform)
+                self.test_dataset = Dataset_CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
+                                                     train=False, download=True, transform=self.train_transform)
 
         # define models
         self.hashnet = hashnet(self.config.vae_embedding_dim).cuda()
-
-        # define loss
-        self.hloss = hloss().cuda()
-        self.closs = closs().cuda()
-
-        # define optimizer
-        self.hashnet_opt = torch.optim.Adam(self.hashnet.parameters(), lr=self.config.vae_learning_rate)
-
-        # define optimize scheduler
-        self.hashnet_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.hashnet_opt, mode='min', factor=0.8,
-                                                                            cooldown=8)
-
-        # initialize train counter
-        self.epoch = 0
 
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
@@ -86,8 +76,24 @@ class Strategy(object):
 
         torch.save(state, tmp_name)
 
+    def set_train(self):
+        # define loss
+        self.hloss = hloss().cuda()
+        self.closs = closs().cuda()
+
+        # define optimizer
+        self.hashnet_opt = torch.optim.Adam(self.hashnet.parameters(), lr=self.config.vae_learning_rate)
+
+        # define optimize scheduler
+        self.hashnet_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.hashnet_opt, mode='min', factor=0.8,
+                                                                            cooldown=8)
+
+        # initialize train counter
+        self.epoch = 0
+
     def run(self, task, sample_list):
         try:
+            self.set_train()
             self.train(task, sample_list)
 
         except KeyboardInterrupt:
@@ -97,6 +103,8 @@ class Strategy(object):
         for _ in range(self.config.vae_epoch):
             self.epoch += 1
             self.train_by_epoch(task, sample_list)
+
+        self.test(task)
         self.save_checkpoint()
 
     def train_by_epoch(self, task, sample_list):
@@ -154,8 +162,49 @@ class Strategy(object):
             self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
             self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
-        if self.epoch % 50 == 0:
+        if self.epoch % 50 == 1:
             print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
+
+    def test(self, task):
+        train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
+                                  pin_memory=self.config.pin_memory)
+        test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=2,
+                                 pin_memory=self.config.pin_memory)
+
+        tqdm_train = tqdm(train_loader, leave=False, total=len(train_loader))
+        tqdm_test = tqdm(test_loader, leave=False, total=len(test_loader))
+
+        train_code, test_code, train_label, test_label = [], [], [], []
+        self.hashnet.eval()
+        with torch.no_grad():
+            for curr_it, data in enumerate(tqdm_train):
+                origin_data = data['origin'].cuda(async=self.config.async_loading)
+                target = data['target'].cuda(async=self.config.async_loading)
+
+                _, origin_features, _ = task.get_result(origin_data)
+                origin_logit = self.hashnet(origin_features)
+
+                train_code.append(torch.sign(origin_logit))
+                train_label.append(target)
+
+            tqdm_train.close()
+            train_code, train_label = torch.cat(train_code), torch.cat(train_label)
+
+            for curr_it, data in enumerate(tqdm_test):
+                origin_data = data['origin'].cuda(async=self.config.async_loading)
+                target = data['target'].cuda(async=self.config.async_loading)
+
+                _, origin_features, _ = task.get_result(origin_data)
+                origin_logit = self.hashnet(origin_features)
+
+                test_code.append(torch.sign(origin_logit))
+                test_label.append(target)
+
+            tqdm_test.close()
+            test_code, test_label = torch.cat(test_code), torch.cat(test_label)
+
+        map = mAP(train_code, test_code, train_label, test_label)
+        print(f'--- retrieval mAP: {map} ---')
 
     def get_code(self, inputs):
         self.hashnet.eval()

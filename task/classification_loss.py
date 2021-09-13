@@ -118,7 +118,7 @@ class ClassificationWithLoss(object):
             self.task_scheduler.step()
             self.loss_scheduler.step()
             
-        self.test_by_epoch()
+        self.test()
 
     def train_by_epoch(self, data_loader):
         tqdm_batch = tqdm(data_loader, leave=False, total=len(data_loader))
@@ -153,7 +153,7 @@ class ClassificationWithLoss(object):
 
         tqdm_batch.close()
 
-    def test_by_epoch(self):
+    def test(self):
         with torch.no_grad():
             tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
 
