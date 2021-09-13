@@ -25,7 +25,7 @@ def evaluate(predictions, gts, num_classes):
     return acc, acc_cls, mean_iu, iu, fwavacc
 
 
-def mAP(trn_binary, tst_binary, trn_label, tst_label):
+def mAP(trn_binary, tst_binary, trn_label, tst_label, is_cuda=True):
     """
     compute mAP by searching testset from trainset
     https://github.com/flyingpot/pytorch_deephash
@@ -34,6 +34,8 @@ def mAP(trn_binary, tst_binary, trn_label, tst_label):
 
     AP = []
     Ns = torch.arange(1, trn_binary.size(0) + 1)
+    if is_cuda:
+        Ns = Ns.cuda()
     for i in range(tst_binary.size(0)):
         query_label, query_binary = tst_label[i], tst_binary[i]
         _, query_result = torch.sum((query_binary != trn_binary).long(), dim=1).sort()

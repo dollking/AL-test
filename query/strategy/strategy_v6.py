@@ -184,7 +184,7 @@ class Strategy(object):
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
 
-                train_code.append(torch.sign(origin_logit).cpu())
+                train_code.append(torch.sign(origin_logit))
                 train_label.append(target)
 
             tqdm_train.close()
@@ -197,7 +197,7 @@ class Strategy(object):
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
 
-                test_code.append(torch.sign(origin_logit).cpu())
+                test_code.append(torch.sign(origin_logit))
                 test_label.append(target)
 
             tqdm_test.close()
