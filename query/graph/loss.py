@@ -34,7 +34,7 @@ class CodeLoss(nn.Module):
         code_balance_loss = (torch.mean(torch.abs(torch.sum(origin_code, dim=1))) +
                              torch.mean(torch.abs(torch.sum(trans_code, dim=1)))) / 2
 
-        code_loss = self.loss(trans_logit, origin_logit.detach())
+        code_loss = self.loss(trans_code, origin_code.detach())
 
         return code_balance_loss, code_loss
 

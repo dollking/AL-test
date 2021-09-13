@@ -109,10 +109,10 @@ class Strategy(object):
 
     def train_by_epoch(self, task, sample_list):
         if self.epoch % 2:
-            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
+            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2, shuffle=True,
                                       pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         else:
-            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
+            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2, shuffle=True,
                                       pin_memory=self.config.pin_memory)
 
         tqdm_batch = tqdm(train_loader, leave=False, total=len(train_loader))
