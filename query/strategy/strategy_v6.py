@@ -102,14 +102,15 @@ class Strategy(object):
     def train(self, task, sample_list):
         for _ in range(self.config.vae_epoch):
             self.epoch += 1
-            self.train_by_epoch(task, sample_list)
+            self.train_by_epoch(task, sample_list[:])
 
         self.test(task)
         self.save_checkpoint()
 
     def train_by_epoch(self, task, sample_list):
         if self.epoch % 2:
-            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2, shuffle=True,
+            random.shuffle(sample_list)
+            train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2,
                                       pin_memory=self.config.pin_memory, sampler=Sampler(sample_list))
         else:
             train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=2, shuffle=True,
