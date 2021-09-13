@@ -141,7 +141,7 @@ class Strategy(object):
             loss = code_balance_loss + code_loss * 0.1
 
             if self.epoch % 2:
-                hash_loss = self.hloss(origin_logit, target, 16*2)
+                hash_loss = self.hloss(trans_logit, target, 16*2)
                 loss = hash_loss + loss * 0.1
 
             loss.backward()
