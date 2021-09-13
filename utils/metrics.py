@@ -25,6 +25,25 @@ def evaluate(predictions, gts, num_classes):
     return acc, acc_cls, mean_iu, iu, fwavacc
 
 
+def mAP(trn_binary, tst_binary, trn_label, tst_label):
+    """
+    compute mAP by searching testset from trainset
+    https://github.com/flyingpot/pytorch_deephash
+    """
+    for x in trn_binary, tst_binary, trn_label, tst_label: x.long()
+
+    AP = []
+    Ns = torch.arange(1, trn_binary.size(0) + 1)
+    for i in range(tst_binary.size(0)):
+        query_label, query_binary = tst_label[i], tst_binary[i]
+        _, query_result = torch.sum((query_binary != trn_binary).long(), dim=1).sort()
+        correct = (query_label == trn_label[query_result]).float()
+        P = torch.cumsum(correct, dim=0) / Ns
+        AP.append(torch.sum(P * correct) / torch.sum(correct))
+    mAP = torch.mean(torch.Tensor(AP))
+    return mAP
+
+
 class AverageMeter:
     def __init__(self):
         self.value = 0
