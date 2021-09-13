@@ -162,7 +162,7 @@ class Strategy(object):
             self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
             self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
-        if self.epoch % 50 == 1:
+        if self.epoch % 50 == 49:
             print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
 
     def test(self, task):
@@ -179,12 +179,12 @@ class Strategy(object):
         with torch.no_grad():
             for curr_it, data in enumerate(tqdm_train):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
-                target = data['target'].cuda(async=self.config.async_loading)
+                target = data['target']
 
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
 
-                train_code.append(torch.sign(origin_logit))
+                train_code.append(torch.sign(origin_logit).cpu())
                 train_label.append(target)
 
             tqdm_train.close()
@@ -192,12 +192,12 @@ class Strategy(object):
 
             for curr_it, data in enumerate(tqdm_test):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
-                target = data['target'].cuda(async=self.config.async_loading)
+                target = data['target']
 
                 _, origin_features, _ = task.get_result(origin_data)
                 origin_logit = self.hashnet(origin_features)
 
-                test_code.append(torch.sign(origin_logit))
+                test_code.append(torch.sign(origin_logit).cpu())
                 test_label.append(target)
 
             tqdm_test.close()
