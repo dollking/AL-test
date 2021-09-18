@@ -159,8 +159,6 @@ class Strategy(object):
     def get_code(self, inputs):
         self.vae.eval()
         with torch.no_grad():
-            inputs = inputs.cuda(async=self.config.async_loading)
-
             _, code, _, _ = self.vae(inputs)
 
         return torch.sign(code)
