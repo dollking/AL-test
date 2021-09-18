@@ -59,7 +59,7 @@ class Strategy(object):
         # define loss
         self.loss = loss().cuda()
         self.closs = closs().cuda()
-        self.kloss = closs().cuda()
+        self.kloss = kloss().cuda()
 
         # define optimizer
         self.vae_opt = torch.optim.Adam(self.vae.parameters(), lr=self.config.vae_learning_rate)
