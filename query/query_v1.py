@@ -70,10 +70,6 @@ class Query(object):
 
         tqdm_batch.close()
 
-        for i in data_dict:
-            print(len(data_dict[i]), end=' / ')
-        print()
-
         sample_set = []
         total_remain = []
         quota = int(sample_size / len(data_dict))
