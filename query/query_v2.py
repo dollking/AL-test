@@ -49,7 +49,7 @@ class Query(object):
         # unlabeled
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
-        tqdm_batch = tqdm(dataloader, total=len(dataloader))
+        tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
         index = 0
         data_dict = {}
         for curr_it, data in enumerate(tqdm_batch):
@@ -74,7 +74,7 @@ class Query(object):
         # labeled
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.labeled))
-        tqdm_batch = tqdm(dataloader, total=len(dataloader))
+        tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
         loss_list = []
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
@@ -92,7 +92,7 @@ class Query(object):
         loss_list = np.array(loss_list[:2000])
 
         code_list = list(loss_list[:, 0])
-        code_list.sort(key=lambda x: len(data_dict[x]))
+        code_list.sort(key=lambda x: len(data_dict[x]) if x in data_dict else 0)
 
         # sampling
         index = 0
@@ -101,10 +101,11 @@ class Query(object):
             tmp_code = code_list[index]
             if tmp_code in data_dict and data_dict[tmp_code]:
                 sample_set.append(data_dict[tmp_code].pop())
+                index += 1
             else:
                 code_list.pop(index)
 
-            index = (index + 1) % len(code_list)
+            index %= len(code_list)
         else:
             if len(sample_set) < sample_size:
                 self.unlabeled = list(set(self.unlabeled) - set(sample_set))

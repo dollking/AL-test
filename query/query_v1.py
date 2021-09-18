@@ -48,7 +48,7 @@ class Query(object):
 
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
-        tqdm_batch = tqdm(dataloader, total=len(dataloader))
+        tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
         index = 0
         data_dict = {}

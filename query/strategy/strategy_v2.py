@@ -172,12 +172,10 @@ class Strategy(object):
         test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=2,
                                  pin_memory=self.config.pin_memory)
 
-        tqdm_train = tqdm(train_loader, leave=False, total=len(train_loader))
-        tqdm_test = tqdm(test_loader, leave=False, total=len(test_loader))
-
         train_code, test_code, train_label, test_label = [], [], [], []
         self.hashnet.eval()
         with torch.no_grad():
+            tqdm_train = tqdm(train_loader, leave=False, total=len(train_loader))
             for curr_it, data in enumerate(tqdm_train):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
                 target = data['target'].cuda(async=self.config.async_loading)
@@ -191,6 +189,7 @@ class Strategy(object):
             tqdm_train.close()
             train_code, train_label = torch.cat(train_code), torch.cat(train_label)
 
+            tqdm_test = tqdm(test_loader, leave=False, total=len(test_loader))
             for curr_it, data in enumerate(tqdm_test):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
                 target = data['target'].cuda(async=self.config.async_loading)
