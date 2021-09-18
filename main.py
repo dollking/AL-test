@@ -3,7 +3,7 @@ import torch
 from torch.backends import cudnn
 
 from config import Config
-from query.query_v4 import Query
+from query.query_v1 import Query
 from query.strategy.strategy_v1 import Strategy
 from task.classification_loss import ClassificationWithLoss as Task
 
