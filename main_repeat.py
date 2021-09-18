@@ -20,8 +20,6 @@ def main(cycle_cnt):
     strategy = Strategy(config)
     task = Task(config)
 
-    strategy.run()
-
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):
         # take a new sample
@@ -34,6 +32,9 @@ def main(cycle_cnt):
         print(f'test accuracy - {task.best_acc}')
 
         fp.write(f'{task.best_acc}\n')
+
+        if step_cnt < config.max_cycle - 1:
+            strategy.run()
 
     fp.close()
 

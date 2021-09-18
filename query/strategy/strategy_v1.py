@@ -1,5 +1,4 @@
 import os
-import random
 from tqdm import tqdm
 
 import torch
@@ -7,16 +6,17 @@ from torch import nn
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.datasets import CIFAR100, CIFAR10
 
-from query.graph.vae_v4 import VAE as vae
+from query.graph.vae import VAE as vae
 from query.graph.loss import MSE as loss
 from query.graph.loss import CodeLoss as closs
-from task.graph.resnet import ResNet18 as resnet
+from query.graph.loss import KldLoss as kloss
+
 from data.dataset import Dataset_CIFAR10, Dataset_CIFAR100
 
-from utils.metrics import AverageMeter, UncertaintyScore
+from utils.metrics import AverageMeter
 from utils.train_utils import set_logger, count_model_prameters
+
 from tensorboardX import SummaryWriter
 
 cudnn.benchmark = False
@@ -59,6 +59,7 @@ class Strategy(object):
         # define loss
         self.loss = loss().cuda()
         self.closs = closs().cuda()
+        self.kloss = closs().cuda()
 
         # define optimizer
         self.vae_opt = torch.optim.Adam(self.vae.parameters(), lr=self.config.vae_learning_rate)
@@ -120,23 +121,26 @@ class Strategy(object):
             origin_data = data['origin'].cuda(async=self.config.async_loading)
             trans_data = data['trans'].cuda(async=self.config.async_loading)
 
-            origin_recon, origin_code = self.vae(origin_data)
-            trans_recon, trans_code = self.vae(trans_data)
+            origin_recon, origin_logit, origin_mu, origin_logvar = self.vae(origin_data)
+            trans_recon, trans_logit, trans_mu, trans_logvar = self.vae(trans_data)
 
             # reconstruction loss
             recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
-            code_balance_loss, code_loss = self.closs(origin_code, trans_code)
+            kld_loss = (self.kloss(origin_mu, origin_logvar) + self.kloss(trans_mu, trans_logvar)) / 2
+            _, code_loss = self.closs(origin_logit, trans_logit)
 
-            loss = recon_loss + code_balance_loss + code_loss
+            loss = (recon_loss + 0.1 * kld_loss) + code_loss
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
             avg_code_loss.update(code_loss)
-            avg_balance_loss.update(code_balance_loss)
+            # avg_balance_loss.update(code_balance_loss)
 
-            centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
+            if self.epoch % 50 == 0:
+                origin_code = torch.sign(origin_logit)
+                centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
 
         tqdm_batch.close()
         self.vae_scheduler.step(avg_loss.val)
@@ -157,6 +161,6 @@ class Strategy(object):
         with torch.no_grad():
             inputs = inputs.cuda(async=self.config.async_loading)
 
-            _, code = self.vae(inputs)
+            _, code, _, _ = self.vae(inputs)
 
-        return code
+        return torch.sign(code)

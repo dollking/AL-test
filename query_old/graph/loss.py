@@ -40,7 +40,7 @@ class CodeLoss(nn.Module):
 
 
 class HashLoss(nn.Module):
-    def __init__(self):
+    def __int__(self):
         super(HashLoss, self).__init__()
 
     def forward(self, code, cls, m):
@@ -52,11 +52,3 @@ class HashLoss(nn.Module):
         loss = loss.mean() + 0.01 * (code.abs() - 1).abs().sum(dim=1).mean() * 2
 
         return loss
-
-
-class KldLoss(nn.Module):
-    def __init__(self):
-        super(KldLoss, self).__init__()
-
-    def forward(self, mu, logvar):
-        return torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)

@@ -35,74 +35,6 @@ class ResidualStack(nn.Module):
         return x
 
 
-class VectorQuantizerEMA(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, commitment_cost, decay, epsilon=1e-5):
-        super(VectorQuantizerEMA, self).__init__()
-
-        self._embedding_dim = embedding_dim
-        self._num_embeddings = num_embeddings
-
-        self._embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
-        self._embedding.weight.data.normal_()
-        self._commitment_cost = commitment_cost
-
-        self.register_buffer('_ema_cluster_size', torch.zeros(num_embeddings))
-        self._ema_w = nn.Parameter(torch.Tensor(num_embeddings, self._embedding_dim))
-        self._ema_w.data.normal_()
-
-        self._decay = decay
-        self._epsilon = epsilon
-
-    def forward(self, inputs):
-        # convert inputs from BCHW -> BHWC
-        inputs = inputs.permute(0, 2, 3, 1).contiguous()
-        input_shape = inputs.shape
-
-        # Flatten input
-        flat_input = inputs.view(-1, self._embedding_dim)
-
-        # Calculate distances
-        distances = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
-                     + torch.sum(self._embedding.weight ** 2, dim=1)
-                     - 2 * torch.matmul(flat_input, self._embedding.weight.t()))
-
-        # Encoding
-        encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
-        encodings = torch.zeros(encoding_indices.shape[0], self._num_embeddings, device=inputs.device)
-        encodings.scatter_(1, encoding_indices, 1)
-
-        # Quantize and unflatten
-        quantized = torch.matmul(encodings, self._embedding.weight).view(input_shape)
-
-        # Use EMA to update the embedding vectors
-        if self.training:
-            self._ema_cluster_size = self._ema_cluster_size * self._decay + \
-                                     (1 - self._decay) * torch.sum(encodings, 0)
-
-            # Laplace smoothing of the cluster size
-            n = torch.sum(self._ema_cluster_size.data)
-            self._ema_cluster_size = (
-                    (self._ema_cluster_size + self._epsilon)
-                    / (n + self._num_embeddings * self._epsilon) * n)
-
-            dw = torch.matmul(encodings.t(), flat_input)
-            self._ema_w = nn.Parameter(self._ema_w * self._decay + (1 - self._decay) * dw)
-
-            self._embedding.weight = nn.Parameter(self._ema_w / self._ema_cluster_size.unsqueeze(1))
-
-        # Loss
-        e_latent_loss = F.mse_loss(quantized.detach(), inputs)
-        loss = self._commitment_cost * e_latent_loss
-        
-        # Straight Through Estimator
-        quantized = inputs + (quantized - inputs).detach()
-        avg_probs = torch.mean(encodings, dim=0)
-        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
-
-        # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view([inputs.size(0),])
-
-
 class Encoder(nn.Module):
     def __init__(self, in_channels, num_hiddens, num_residual_layers, num_residual_hiddens):
         super(Encoder, self).__init__()
@@ -123,8 +55,6 @@ class Encoder(nn.Module):
                                              num_hiddens=num_hiddens,
                                              num_residual_layers=num_residual_layers,
                                              num_residual_hiddens=num_residual_hiddens)
-        
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, inputs):
         x = self._conv_1(inputs)
@@ -135,21 +65,17 @@ class Encoder(nn.Module):
 
         x = self._conv_3(x)
 
-        out = self._residual_stack(x)
-
-        out = self.avg_pool(out)
-
-        return out
+        return self._residual_stack(x)
 
 
 class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens, num_residual_layers, num_residual_hiddens):
         super(Decoder, self).__init__()
 
-        self._conv_1 = nn.ConvTranspose2d(in_channels=in_channels,
+        self._conv_1 = nn.Conv2d(in_channels=in_channels,
                                  out_channels=num_hiddens,
-                                 kernel_size=8,
-                                 stride=8)
+                                 kernel_size=3,
+                                 stride=1, padding=1)
 
         self._residual_stack = ResidualStack(in_channels=num_hiddens,
                                              num_hiddens=num_hiddens,
@@ -162,6 +88,11 @@ class Decoder(nn.Module):
                                                 stride=2, padding=1)
 
         self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hiddens // 2,
+                                                out_channels=num_hiddens // 4,
+                                                kernel_size=4,
+                                                stride=2, padding=1)
+
+        self._conv_trans_3 = nn.ConvTranspose2d(in_channels=num_hiddens // 4,
                                                 out_channels=3,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
@@ -174,60 +105,65 @@ class Decoder(nn.Module):
         x = self._conv_trans_1(x)
         x = F.relu(x)
 
-        return self._conv_trans_2(x)
+        x = self._conv_trans_2(x)
+        x = F.relu(x)
+
+        return self._conv_trans_3(x)
 
 
 class VAE(nn.Module):
     def __init__(self, num_hiddens, num_residual_layers, num_residual_hiddens,
-                 num_embeddings, embedding_dim, commitment_cost, max_distance, decay=0):
+                 num_embeddings, embedding_dim, max_distance):
         super(VAE, self).__init__()
 
         self.max_distance = max_distance
         self.embedding_dim = embedding_dim
+        self.num_embeddings = num_embeddings
 
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
-        self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
-                                      out_channels=embedding_dim,
-                                      kernel_size=1,
-                                      stride=1)
+        self.conv1_1 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=2, padding=1)
+        self.conv1_2 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=2, padding=1)
 
-        self._vq_vae = VectorQuantizerEMA(num_embeddings, embedding_dim,
-                                          commitment_cost, decay)
+        self.conv2 = nn.Conv2d(in_channels=num_hiddens,
+                                        out_channels=embedding_dim,
+                                        kernel_size=1,
+                                        stride=1)
 
-        self._decoder = Decoder(embedding_dim * 2,
+        self._decoder = Decoder(embedding_dim + num_hiddens,
                                 num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
 
-    def forward(self, x, is_train=True):
-        z = self._encoder(x)
-        z = self._pre_vq_conv(z)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
-        loss, quantized, perplexity, encoding_indices = self._vq_vae(z)
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return eps * std + mu
 
-        distance = ((quantized - z) ** 2).view([-1, self.embedding_dim])
-        distance = torch.sqrt(torch.sum(distance, axis=1))
+    def forward(self, x):
+        encoder_out = self._encoder(x)
+        mu = self.conv1_1(encoder_out)
+        logvar = self.conv1_2(encoder_out)
+
+        z = self.reparameterize(mu, logvar)
         
-        if not is_train:
-            return encoding_indices, distance
-        
+        _z = self.avg_pool(self.conv2(z))
+        code = torch.sign(_z)
+
+        _, _, w, h = z.size()
+        quantized = code.repeat([1, 1, w, h])
+
         decoder_in = torch.cat([z, quantized], dim=1)
 
         x_recon = self._decoder(decoder_in)
-        
-        cnt = 0
-        centroid_loss = 0.
-        lst = [i for i in range(100)]
-        s_lst = [i for i in range(100)]
-        random.shuffle(s_lst)
-        for idx in range(100):
-            if lst[idx] != s_lst[idx]:
-                cnt += 1
-                centroid_loss += torch.abs(torch.sum((self._vq_vae._embedding.weight[lst[idx]] -
-                                                      self._vq_vae._embedding.weight[s_lst[idx]]) ** 2)
-                                           - self.max_distance)
-        centroid_loss /= cnt
 
-        return loss + centroid_loss, x_recon, perplexity, distance
+        return x_recon, _z, mu, logvar
