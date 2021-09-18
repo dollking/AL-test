@@ -34,7 +34,7 @@ def main(cycle_cnt):
         fp.write(f'{task.best_acc}\n')
 
         if step_cnt < config.max_cycle - 1:
-            strategy.run()
+            strategy.run(task, query.labeled)
 
     fp.close()
 
