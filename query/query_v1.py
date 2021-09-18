@@ -56,7 +56,7 @@ class Query(object):
             data = data[0].cuda(async=self.config.async_loading)
 
             _, features, pred_loss = task.get_result(data)
-            code = strategy.get_code(features)
+            code = strategy.get_code(data)
 
             code = tuple(map(tuple, code.view([-1, self.config.vae_embedding_dim]).cpu().tolist()))
             pred_loss = pred_loss.cpu().numpy()
