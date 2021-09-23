@@ -151,8 +151,8 @@ class VAE(nn.Module):
         encoder_out = self._encoder(x)
         _x = torch.flatten(self.conv1(encoder_out), start_dim=1)
 
-        mu = self.fc_mu(encoder_out)
-        logvar = self.fc_var(encoder_out)
+        mu = self.fc_mu(_x)
+        logvar = self.fc_var(_x)
 
         z = self.reparameterize(mu, logvar)
         
