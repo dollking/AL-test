@@ -156,9 +156,10 @@ class VAE(nn.Module):
         logvar = self.fc_var(_x)
 
         z = self.reparameterize(mu, logvar)
-        
+
         _z = self.fc_z(z)
         code = torch.sign(_z)
+        code = code.view([-1, code.size(1), 1, 1])
 
         _, c, w, h = encoder_out.size()
         quantized = code.repeat([1, 1, w, h])
