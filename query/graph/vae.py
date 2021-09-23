@@ -123,17 +123,19 @@ class VAE(nn.Module):
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
-        self.conv1 = nn.Conv2d(in_channels=num_hiddens,
-                              out_channels=num_hiddens,
-                              kernel_size=3,
-                              stride=2, padding=1)
+        self.conv1_1 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=2, padding=1)
+        self.conv1_2 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=2, padding=1)
 
-        self.fc_mu = nn.Linear(num_hiddens * 16, num_hiddens)
-        self.fc_var = nn.Linear(num_hiddens * 16, num_hiddens)
-
-        self.fc_z = nn.Linear(num_hiddens, embedding_dim)
-
-        self.fc_recover = nn.Linear(num_hiddens, num_hiddens * 16)
+        self.conv2 = nn.Conv2d(in_channels=num_hiddens,
+                               out_channels=embedding_dim,
+                               kernel_size=1,
+                               stride=1)
 
         self._decoder = Decoder(embedding_dim + num_hiddens,
                                 num_hiddens,
@@ -149,24 +151,19 @@ class VAE(nn.Module):
 
     def forward(self, x):
         encoder_out = self._encoder(x)
-        encoder_out = self.conv1(encoder_out)
-        _x = torch.flatten(encoder_out, start_dim=1)
-
-        mu = self.fc_mu(_x)
-        logvar = self.fc_var(_x)
+        mu = self.conv1_1(encoder_out)
+        print(mu.size())
+        logvar = self.conv1_2(encoder_out)
 
         z = self.reparameterize(mu, logvar)
 
-        _z = self.fc_z(z)
+        _z = self.avg_pool(self.conv2(z))
         code = torch.sign(_z)
-        code = code.view([-1, code.size(1), 1, 1])
 
-        _, c, w, h = encoder_out.size()
+        _, _, w, h = z.size()
         quantized = code.repeat([1, 1, w, h])
 
-        d_in = self.fc_recover(z).view([-1, c, w, h])
-
-        decoder_in = torch.cat([d_in, quantized], dim=1)
+        decoder_in = torch.cat([z, quantized], dim=1)
 
         x_recon = self._decoder(decoder_in)
 
