@@ -98,14 +98,14 @@ class Query(object):
         index = 0
         sample_set = []
         while code_list and len(sample_set) < sample_size:
+            index %= len(code_list)
+
             tmp_code = code_list[index]
             if tmp_code in data_dict and data_dict[tmp_code]:
                 sample_set.append(data_dict[tmp_code].pop())
                 index += 1
             else:
                 code_list.pop(index)
-
-            index %= len(code_list)
         else:
             if len(sample_set) < sample_size:
                 self.unlabeled = list(set(self.unlabeled) - set(sample_set))

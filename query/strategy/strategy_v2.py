@@ -137,11 +137,11 @@ class Strategy(object):
             _, trans_features, _ = task.get_result(trans_data)
             trans_logit = self.hashnet(trans_features)
 
-            _, code_loss = self.closs(origin_logit, trans_logit)
-            loss = code_loss * 0.1
+            code_balance_loss, code_loss = self.closs(origin_logit, trans_logit)
+            loss = code_balance_loss + code_loss * 0.1
 
             if self.epoch % 2:
-                hash_loss = self.hloss(trans_logit, target, 16*2)
+                hash_loss = self.hloss(trans_logit, target, self.config.vae_embedding_dim * 2)
                 loss = hash_loss + loss * 0.1
 
             loss.backward()
@@ -150,7 +150,7 @@ class Strategy(object):
             if self.epoch % 2:
                 avg_loss.update(loss)
                 avg_code_loss.update(code_loss)
-                # avg_balance_loss.update(code_balance_loss)
+                avg_balance_loss.update(code_balance_loss)
 
                 origin_code = torch.sign(origin_logit)
                 centroid_set |= set(tuple(map(tuple, origin_code.view([-1, self.config.vae_embedding_dim]).cpu().tolist())))
