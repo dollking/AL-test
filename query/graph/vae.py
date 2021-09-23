@@ -149,7 +149,8 @@ class VAE(nn.Module):
 
     def forward(self, x):
         encoder_out = self._encoder(x)
-        _x = torch.flatten(self.conv1(encoder_out), start_dim=1)
+        encoder_out = self.conv1(encoder_out)
+        _x = torch.flatten(encoder_out, start_dim=1)
 
         mu = self.fc_mu(_x)
         logvar = self.fc_var(_x)
@@ -159,7 +160,7 @@ class VAE(nn.Module):
         _z = self.fc_z(z)
         code = torch.sign(_z)
 
-        _, c, w, h = _x.size()
+        _, c, w, h = encoder_out.size()
         quantized = code.repeat([1, 1, w, h])
 
         d_in = self.fc_recover(z).view([-1, c, w, h])
