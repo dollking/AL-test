@@ -149,7 +149,7 @@ class VAE(nn.Module):
 
     def forward(self, x):
         encoder_out = self._encoder(x)
-        _x = self.conv1(encoder_out)
+        _x = torch.flatten(self.conv1(encoder_out))
 
         mu = self.fc_mu(encoder_out)
         logvar = self.fc_var(encoder_out)
