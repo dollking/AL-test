@@ -129,7 +129,7 @@ class Strategy(object):
             kld_loss = (self.kloss(origin_mu, origin_logvar) + self.kloss(trans_mu, trans_logvar)) / 2
             _, code_loss = self.closs(origin_logit, trans_logit)
 
-            loss = (recon_loss + 0.1 * kld_loss) + code_loss
+            loss = (recon_loss + kld_loss) + (code_loss * 0.1)
 
             loss.backward()
             self.vae_opt.step()
