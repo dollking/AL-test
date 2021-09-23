@@ -152,7 +152,6 @@ class VAE(nn.Module):
     def forward(self, x):
         encoder_out = self._encoder(x)
         mu = self.conv1_1(encoder_out)
-        print(mu.size())
         logvar = self.conv1_2(encoder_out)
 
         z = self.reparameterize(mu, logvar)
