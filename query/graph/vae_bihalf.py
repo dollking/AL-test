@@ -117,8 +117,8 @@ class hash(Function):
     def forward(ctx, U):
         _, index = U.sort(0, descending=True)
         N, D = U.shape
-        B_creat = torch.cat((torch.ones([int(N / 2), D]), -torch.ones([N - int(N / 2), D])))
-        B = torch.zeros(U.shape).scatter_(0, index, B_creat)
+        B_creat = torch.cat((torch.ones([int(N / 2), D]), -torch.ones([N - int(N / 2), D]))).cuda()
+        B = torch.zeros(U.shape).cuda().scatter_(0, index, B_creat)
 
         ctx.save_for_backward(U, B)
 

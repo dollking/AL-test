@@ -122,7 +122,7 @@ class Strategy(object):
 
             # reconstruction loss
             recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
-            code_loss = nn.functional.cosine_similarity(origin_code, trans_code)
+            code_loss = torch.mean(nn.functional.cosine_similarity(origin_code, trans_code))
 
             loss = recon_loss + (code_loss * 0.1)
 
