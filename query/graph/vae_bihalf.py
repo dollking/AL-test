@@ -2,6 +2,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Function
 
 
 class Residual(nn.Module):
@@ -111,6 +112,32 @@ class Decoder(nn.Module):
         return self._conv_trans_3(x)
 
 
+class hash(Function):
+    @staticmethod
+    def forward(ctx, U):
+        _, index = U.sort(0, descending=True)
+        N, D = U.shape
+        B_creat = torch.cat((torch.ones([int(N / 2), D]), -torch.ones([N - int(N / 2), D])))
+        B = torch.zeros(U.shape).scatter_(0, index, B_creat)
+
+        ctx.save_for_backward(U, B)
+
+        return B
+
+    @staticmethod
+    def backward(ctx, g):
+        U, B = ctx.saved_tensors
+        add_g = (U - B) / (B.numel())
+
+        grad = g + 1 * add_g
+
+        return grad
+
+
+def hash_layer(input):
+    return hash.apply(input)
+
+
 class VAE(nn.Module):
     def __init__(self, num_hiddens, num_residual_layers, num_residual_hiddens, embedding_dim):
         super(VAE, self).__init__()
@@ -120,47 +147,30 @@ class VAE(nn.Module):
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
-        self.conv1_1 = nn.Conv2d(in_channels=num_hiddens,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=2, padding=1)
-        self.conv1_2 = nn.Conv2d(in_channels=num_hiddens,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=2, padding=1)
+        self.encoder_conv = nn.Conv2d(in_channels=num_hiddens,
+                                      out_channels=num_hiddens,
+                                      kernel_size=3,
+                                      stride=2, padding=1)
+        self.encoder_fc = nn.Linear(num_hiddens * 4 * 4, embedding_dim)
 
-        self.conv2 = nn.Conv2d(in_channels=num_hiddens,
-                               out_channels=embedding_dim,
-                               kernel_size=1,
-                               stride=1)
-
-        self._decoder = Decoder(embedding_dim + num_hiddens,
+        self._decoder = Decoder(num_hiddens,
                                 num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
+        self.decoder_fc = nn.Linear(embedding_dim, num_hiddens * 4 * 4)
 
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return eps * std + mu
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         encoder_out = self._encoder(x)
-        mu = self.conv1_1(encoder_out)
-        logvar = self.conv1_2(encoder_out)
+        encoder_out = self.relu(self.encoder_conv(encoder_out))
+        _, c, w, h = encoder_out.size()
+        encoder_out = torch.flatten(encoder_out, start_dim=1)
+        encoder_out = self.encoder_fc(encoder_out)
 
-        z = self.reparameterize(mu, logvar)
+        code = hash_layer(encoder_out)
 
-        _z = self.avg_pool(self.conv2(z))
-        code = torch.sign(_z)
-
-        _, _, w, h = z.size()
-        quantized = code.repeat([1, 1, w, h])
-
-        decoder_in = torch.cat([z, quantized], dim=1)
-
+        decoder_in = self.relu(self.decoder_fc(code)).view([-1, c, w, h])
         x_recon = self._decoder(decoder_in)
 
-        return x_recon, _z, mu, logvar
+        return x_recon, encoder_out, code

@@ -7,10 +7,9 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from query.graph.vae import VAE as vae
+from query.graph.vae_bihalf import VAE as vae
 from query.graph.loss import MSE as loss
 from query.graph.loss import CodeLoss as closs
-from query.graph.loss import KldLoss as kloss
 
 from data.dataset import Dataset_CIFAR10, Dataset_CIFAR100
 
@@ -58,7 +57,6 @@ class Strategy(object):
         # define loss
         self.loss = loss().cuda()
         self.closs = closs().cuda()
-        self.kloss = kloss().cuda()
 
         # define optimizer
         self.vae_opt = torch.optim.Adam(self.vae.parameters(), lr=self.config.vae_learning_rate)
@@ -111,7 +109,6 @@ class Strategy(object):
         centroid_set = set()
         avg_loss = AverageMeter()
         avg_code_loss = AverageMeter()
-        avg_balance_loss = AverageMeter()
 
         self.vae.train()
         for curr_it, data in enumerate(tqdm_batch):
@@ -120,22 +117,20 @@ class Strategy(object):
             origin_data = data['origin'].cuda(async=self.config.async_loading)
             trans_data = data['trans'].cuda(async=self.config.async_loading)
 
-            origin_recon, origin_logit, origin_mu, origin_logvar = self.vae(origin_data)
-            trans_recon, trans_logit, trans_mu, trans_logvar = self.vae(trans_data)
+            origin_recon, origin_logit, origin_code = self.vae(origin_data)
+            trans_recon, trans_logit, trans_code = self.vae(trans_data)
 
             # reconstruction loss
             recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
-            kld_loss = (self.kloss(origin_mu, origin_logvar) + self.kloss(trans_mu, trans_logvar)) / 2
-            _, code_loss = self.closs(origin_logit, trans_logit)
+            code_loss = nn.functional.cosine_similarity(origin_code, trans_code)
 
-            loss = (recon_loss + kld_loss) + (code_loss * 0.1)
+            loss = recon_loss + (code_loss * 0.1)
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
             avg_code_loss.update(code_loss)
-            # avg_balance_loss.update(code_balance_loss)
 
             if self.epoch % 50 == 0:
                 origin_code = torch.sign(origin_logit)
@@ -149,7 +144,6 @@ class Strategy(object):
         self.summary_writer.add_image('image/recon_origin', origin_recon[0], self.epoch)
 
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
-        self.summary_writer.add_scalar("balance_loss", avg_balance_loss.val, self.epoch)
         self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
@@ -158,6 +152,6 @@ class Strategy(object):
     def get_code(self, inputs):
         self.vae.eval()
         with torch.no_grad():
-            _, code, _, _ = self.vae(inputs)
+            _, code, _ = self.vae(inputs)
 
         return torch.sign(code)

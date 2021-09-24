@@ -94,6 +94,8 @@ class Query(object):
         code_list = list(loss_list[:, 0])
         code_list.sort(key=lambda x: len(data_dict[x]) if x in data_dict else 0)
 
+        print(len(code_list), len(data_dict.keys()), len(set(code_list) & set(data_dict.keys())))
+
         # sampling
         index = 0
         sample_set = []
