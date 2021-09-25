@@ -166,11 +166,11 @@ class VAE(nn.Module):
         encoder_out = self.relu(self.encoder_conv(encoder_out))
         _, c, w, h = encoder_out.size()
         encoder_out = torch.flatten(encoder_out, start_dim=1)
-        encoder_out = self.encoder_fc(encoder_out)
 
-        code = hash_layer(encoder_out)
+        h_code = self.encoder_fc(encoder_out)
+        b_code = hash_layer(h_code)
 
-        decoder_in = self.relu(self.decoder_fc(code)).view([-1, c, w, h])
+        decoder_in = self.relu(self.decoder_fc(b_code)).view([-1, c, w, h])
         x_recon = self._decoder(decoder_in)
 
-        return x_recon, encoder_out, code
+        return x_recon, encoder_out, h_code, b_code

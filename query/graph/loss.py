@@ -54,6 +54,19 @@ class HashLoss(nn.Module):
         return loss
 
 
+class BHLoss(nn.Module):
+    def __init__(self):
+        super(BHLoss, self).__init__()
+
+        self.loss = nn.MSELoss()
+
+    def forward(self, b, x, size):
+        target_b = nn.functional.cosine_similarity(b[:int(size / 2)], b[int(size / 2):])
+        target_x = nn.functional.cosine_similarity(x[:int(size / 2)], x[int(size / 2):])
+
+        return self.loss(target_b, target_x)
+
+
 class KldLoss(nn.Module):
     def __init__(self):
         super(KldLoss, self).__init__()

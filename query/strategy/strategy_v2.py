@@ -203,8 +203,8 @@ class Strategy(object):
             tqdm_test.close()
             test_code, test_label = torch.cat(test_code), torch.cat(test_label)
 
-        map = mAP(train_code, test_code, train_label, test_label)
-        print(f'--- retrieval mAP: {map} ---')
+        _map = mAP(train_code, test_code, train_label, test_label)
+        print(f'--- retrieval mAP: {_map} ---')
 
     def get_code(self, inputs):
         self.hashnet.eval()
