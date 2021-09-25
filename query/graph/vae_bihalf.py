@@ -161,7 +161,7 @@ class VAE(nn.Module):
                                    out_channels=num_hiddens,
                                    kernel_size=3,
                                    stride=2, padding=1)
-        self.hash_fc1 = nn.Linear(num_hiddens * 4, embedding_dim * 4)
+        self.hash_fc1 = nn.Linear(num_hiddens * 4, num_hiddens * 4)
         self.hash_fc2 = nn.Linear(num_hiddens * 4, embedding_dim)
 
         self.relu = nn.ReLU(inplace=True)
