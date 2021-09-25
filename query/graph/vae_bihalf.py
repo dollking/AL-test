@@ -151,26 +151,35 @@ class VAE(nn.Module):
                                       out_channels=num_hiddens,
                                       kernel_size=3,
                                       stride=2, padding=1)
-        self.encoder_fc = nn.Linear(num_hiddens * 4 * 4, embedding_dim)
 
         self._decoder = Decoder(num_hiddens,
                                 num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
-        self.decoder_fc = nn.Linear(embedding_dim, num_hiddens * 4 * 4)
+
+        self.hash_conv = nn.Conv2d(in_channels=num_hiddens,
+                                   out_channels=num_hiddens,
+                                   kernel_size=3,
+                                   stride=2, padding=1)
+        self.hash_fc1 = nn.Linear(num_hiddens * 4, embedding_dim * 4)
+        self.hash_fc2 = nn.Linear(num_hiddens * 4, embedding_dim)
 
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        encoder_out = self._encoder(x)
-        encoder_out = self.relu(self.encoder_conv(encoder_out))
-        _, c, w, h = encoder_out.size()
-        encoder_out = torch.flatten(encoder_out, start_dim=1)
+        # encoder
+        encoder_out = self.relu(self._encoder(x))
+        encoder_out = self.encoder_conv(encoder_out)
 
-        h_code = self.encoder_fc(encoder_out)
+        # decoder
+        x_recon = self._decoder(encoder_out)
+
+        # hash
+        feature = self.relu(self.hash_conv(encoder_out))
+        feature = torch.flatten(feature, start_dim=1)
+        feature = self.relu(self.hash_fc1(feature))
+
+        h_code = self.hash_fc2(feature)
         b_code = hash_layer(h_code)
 
-        decoder_in = self.relu(self.decoder_fc(b_code)).view([-1, c, w, h])
-        x_recon = self._decoder(decoder_in)
-
-        return x_recon, encoder_out, h_code, b_code
+        return x_recon, feature, h_code, b_code

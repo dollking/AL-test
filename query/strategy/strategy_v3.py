@@ -124,17 +124,17 @@ class Strategy(object):
             origin_data = data['origin'].cuda(async=self.config.async_loading)
             trans_data = data['trans'].cuda(async=self.config.async_loading)
 
-            origin_recon, origin_x, origin_logit, origin_code = self.vae(origin_data)
-            trans_recon, trans_x, trans_logit, trans_code = self.vae(trans_data)
+            origin_recon, origin_feature, origin_logit, origin_code = self.vae(origin_data)
+            trans_recon, trans_feature, trans_logit, trans_code = self.vae(trans_data)
 
             # reconstruction loss
             recon_loss = (self.loss(origin_recon, origin_data) + self.loss(trans_recon, trans_data)) / 2
-            bhloss = (self.bhloss(origin_x, origin_code, origin_data.size(0)) +
-                      self.bhloss(trans_x, trans_code, origin_data.size(0))) / 2
+            bhloss = (self.bhloss(origin_feature, origin_code, origin_data.size(0)) +
+                      self.bhloss(trans_feature, trans_code, origin_data.size(0))) / 2
 
             _, code_loss = self.closs(origin_logit, trans_logit)
 
-            loss = recon_loss + bhloss + (code_loss * 0.1)
+            loss = recon_loss + (bhloss * 0.1) + (code_loss * 0.05)
 
             loss.backward()
             self.vae_opt.step()
@@ -185,7 +185,7 @@ class Strategy(object):
                 origin_data = data['origin'].cuda(async=self.config.async_loading)
                 target = data['target'].cuda(async=self.config.async_loading)
 
-                _, origin_logit, _ = self.vae(origin_data)
+                _, _, origin_logit, _ = self.vae(origin_data)
 
                 test_code.append(torch.sign(origin_logit))
                 test_label.append(target)
