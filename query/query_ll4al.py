@@ -54,7 +54,7 @@ class Query(object):
             for curr_it, data in enumerate(tqdm_batch):
                 data = data[0].cuda(async=self.config.async_loading)
 
-                _, pred_loss = task.get_result(data)
+                _, _, pred_loss = task.get_result(data)
 
                 uncertainty = torch.cat([uncertainty, pred_loss], 0)
             tqdm_batch.close()
