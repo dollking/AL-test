@@ -74,10 +74,10 @@ class Query(object):
         self.test.write(f'step: {step_cnt} -> code count: {len(data_dict.keys())}\n')
         for i in data_dict:
             temp_data = np.array(data_dict[i])[:, 0]
-            self.test.write(f'{len(temp_data)} - {temp_data.min()}/{temp_data.max()}/{temp_data.mean()}/{temp_data.var()}\n')
+            self.test.write(f'{len(temp_data)} - {temp_data.min()}/{temp_data.max()}/{temp_data.mean()}/{temp_data.std()}\n')
             temp_lst.append(temp_data.mean())
         temp_lst = np.array(temp_lst)
-        self.test.write(f'{temp_lst.min()}/{temp_lst.max()}/{temp_lst.mean()}\n\n')
+        self.test.write(f'{temp_lst.min()}/{temp_lst.max()}/{temp_lst.mean()}/{temp_lst.std()}\n\n')
 
         sample_set = []
         total_remain = []
