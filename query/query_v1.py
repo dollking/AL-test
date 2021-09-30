@@ -35,6 +35,7 @@ class Query(object):
             elif self.config.data_name == 'cifar100':
                 self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=True, download=True, transform=self.train_transform)
+        self.test = open(f'{random.randint(100000, 999999)}.txt', 'w')
 
     def sampling(self, step_cnt, strategy, task):
         if not step_cnt:
@@ -67,8 +68,13 @@ class Query(object):
                 else:
                     data_dict[code[idx]] = [[pred_loss[idx], self.unlabeled[index]]]
                 index += 1
-
         tqdm_batch.close()
+
+        self.test.write(f'step: {step_cnt} -> code count: {len(data_dict.keys())}\n')
+        for i in data_dict:
+            temp_data = np.array(data_dict[i])[:, 0]
+            self.test.write(f'{temp_data.mean()}/{temp_data.var()}\n')
+        self.test.write('\n')
 
         sample_set = []
         total_remain = []

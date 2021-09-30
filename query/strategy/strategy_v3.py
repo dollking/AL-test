@@ -107,7 +107,8 @@ class Strategy(object):
         for _ in range(self.config.vae_epoch):
             self.epoch += 1
             self.train_by_epoch()
-        self.test()
+            if not self.epoch % 50:
+                self.test()
         self.save_checkpoint()
 
     def train_by_epoch(self):
@@ -115,7 +116,7 @@ class Strategy(object):
 
         centroid_set = set()
         avg_loss = AverageMeter()
-        avg_code_loss = AverageMeter()
+        #avg_code_loss = AverageMeter()
 
         self.vae.train()
         for curr_it, data in enumerate(tqdm_batch):
@@ -132,15 +133,15 @@ class Strategy(object):
             bhloss = (self.bhloss(origin_feature, origin_code, origin_data.size(0)) +
                       self.bhloss(trans_feature, trans_code, origin_data.size(0))) / 2
 
-            _, code_loss = self.closs(origin_logit, trans_logit)
+            #_, code_loss = self.closs(origin_logit, trans_logit)
 
-            loss = recon_loss + (bhloss * 0.1) + (code_loss * 0.05)
+            loss = recon_loss + (bhloss * 0.1)# + (code_loss * 0.05)
 
             loss.backward()
             self.vae_opt.step()
 
             avg_loss.update(loss)
-            avg_code_loss.update(code_loss)
+            #avg_code_loss.update(code_loss)
 
             if self.epoch % 50 == 0:
                 origin_code = torch.sign(origin_logit)
@@ -154,7 +155,7 @@ class Strategy(object):
         self.summary_writer.add_image('image/recon_origin', origin_recon[0], self.epoch)
 
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
-        self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
+        #self.summary_writer.add_scalar("code_loss", avg_code_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
