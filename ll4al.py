@@ -1,4 +1,6 @@
 import random
+import numpy as np
+
 import torch
 from torch.backends import cudnn
 
@@ -6,14 +8,16 @@ from config import Config
 from query.query_ll4al import Query
 from task.classification_loss import ClassificationWithLoss as Task
 
-cudnn.deterministic = True
-
-random.seed(9410)
-torch.manual_seed(9410)
-torch.cuda.manual_seed_all(9410)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def main(cycle_cnt):
+    random.seed(cycle_cnt * 1000)
+    np.random.seed(cycle_cnt * 1000)
+    torch.manual_seed(cycle_cnt * 1000)
+    torch.cuda.manual_seed_all(cycle_cnt * 1000)
+
     config = Config()
     query = Query(config)
     task = Task(config)
