@@ -39,6 +39,7 @@ def main(cycle_cnt):
 
         fp.write(f'{task.best_acc}\n')
 
+    query.test.close()
     fp.close()
 
 
