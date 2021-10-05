@@ -45,3 +45,21 @@ class RankingLoss(nn.Module):
         pred_loss = torch.sigmoid(pred_loss)
 
         return self.bce(pred_loss, ones)
+
+
+class GDistanceLoss(nn.Module):
+    def __init__(self):
+        super(GDistanceLoss, self).__init__()
+
+        self.bce = nn.BCELoss()
+
+    def forward(self, features, loss):
+        target1 = torch.sqrt(loss)
+        distance1 = torch.sqrt(torch.sum(torch.pow(features, 2), dim=1))
+
+        target2 = torch.sqrt((loss * loss.flip(0))[:loss.size(0) // 2])
+        target2 = target2.detach()
+
+        distance2 = torch.sqrt(torch.sum(torch.pow((features - features.flip(0))[:features.size(0) // 2], 2), dim=1))
+
+        return self.bce(distance1, target1) + self.bce(distance2, target2)
