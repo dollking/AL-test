@@ -16,7 +16,7 @@ from .graph.loss import GDistanceLoss as d_loss
 from data.sampler import Sampler
 
 from utils.metrics import AverageMeter
-from utils.train_utils import count_model_prameters
+from utils.train_utils import count_model_prameters, print_scatter
 
 
 cudnn.benchmark = False
@@ -179,6 +179,30 @@ class ClassificationWithFeature(object):
             if correct / total > self.best_acc:
                 self.best_acc = correct / total
                 self.save_checkpoint()
+
+    def print_feature_scatter(self, cycle, step):
+        with torch.no_grad():
+            tqdm_batch = tqdm(self.test_loader, leave=False, total=len(self.test_loader))
+
+            self.task.eval()
+            self.feature_module.eval()
+            feature_set, loss_set = [], []
+            for curr_it, data in enumerate(tqdm_batch):
+                inputs = data[0].cuda(async=self.config.async_loading)
+                targets = data[1].cuda(async=self.config.async_loading)
+
+                out, task_features = self.task(inputs)
+                target_loss = self.loss(out, targets, 10)
+
+                features = self.feature_module(task_features)
+                features = features.view([-1, self.config.vae_embedding_dim])
+
+                feature_set.append(features.cpu().numpy())
+                loss_set.append(target_loss.cpu().numpy())
+
+            tqdm_batch.close()
+
+            print_scatter(feature_set, loss_set, cycle, step)
 
     def get_distance(self, inputs):
         self.task.eval()
