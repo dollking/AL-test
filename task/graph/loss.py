@@ -51,7 +51,7 @@ class GDistanceLoss(nn.Module):
     def __init__(self):
         super(GDistanceLoss, self).__init__()
 
-        self.bce = nn.BCELoss()
+        self.loss = nn.MSELoss()
 
     def forward(self, features, loss):
         target1 = torch.sqrt(loss)
@@ -62,4 +62,4 @@ class GDistanceLoss(nn.Module):
         target2 = target2.detach()
         distance2 = torch.sqrt(torch.sum(torch.pow((features - features.flip(0))[:features.size(0) // 2], 2), dim=1))
 
-        return self.bce(distance1, target1) + self.bce(distance2, target2)
+        return self.loss(distance1, target1) + self.loss(distance2, target2)
