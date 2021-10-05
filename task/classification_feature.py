@@ -146,7 +146,7 @@ class ClassificationWithFeature(object):
             features = self.feature_module(task_features)
             features = features.view([-1, self.config.vae_embedding_dim])
 
-            loss = (self.d_loss(features, target_loss) * 0.01) + torch.mean(target_loss)
+            loss = (self.d_loss(features, target_loss) * 0.1) + torch.mean(target_loss)
 
             loss.backward()
             self.task_opt.step()
@@ -179,7 +179,6 @@ class ClassificationWithFeature(object):
             if correct / total > self.best_acc:
                 self.best_acc = correct / total
                 self.save_checkpoint()
-        print(f'--- accuracy: {self.best_acc} ---')
 
     def get_distance(self, inputs):
         self.task.eval()
