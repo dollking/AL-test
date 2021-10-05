@@ -56,7 +56,7 @@ class Query(object):
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
-            distance = task.get_result(data)
+            distance = task.get_distance(data)
             distance = distance.cpu().numpy()
 
             for idx in range(len(distance)):
