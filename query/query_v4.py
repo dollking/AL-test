@@ -71,7 +71,7 @@ class Query(object):
         tqdm_batch.close()
 
         key_lst = data_dict.keys()
-        key_lst = sorted(key_lst, key=lambda x: np.array(data_dict[x])[:, 0].mean())
+        key_lst = sorted(key_lst, key=lambda x: np.array(data_dict[x])[:, 0].mean(), reverse=True)
 
         temp_lst = []
         self.test.write(f'step: {step_cnt} -> code count: {len(data_dict.keys())}\n')
