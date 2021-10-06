@@ -94,8 +94,7 @@ class Query(object):
             else:
                 sample_set += list(np.array(tmp_list)[:, 1])
         for i in key_lst[100:]:
-            tmp_list = sorted(data_dict[i], key=lambda x: x[0], reverse=True)
-            sample_set += list(np.array(tmp_list)[:, 1])
+            total_remain += list(np.array(data_dict[i])[:, 1])
 
         tmp_list = sorted(total_remain, key=lambda x: x[0], reverse=True)
         sample_set += list(np.array(tmp_list)[:(sample_size - len(sample_set)), 1])
