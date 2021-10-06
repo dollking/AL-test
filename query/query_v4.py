@@ -70,17 +70,17 @@ class Query(object):
                 index += 1
         tqdm_batch.close()
 
+        key_lst = data_dict.keys()
+        key_lst = sorted(key_lst, key=lambda x: np.array(data_dict[x])[:, 0].mean())
+
         temp_lst = []
         self.test.write(f'step: {step_cnt} -> code count: {len(data_dict.keys())}\n')
-        for i in data_dict:
+        for i in key_lst:
             temp_data = np.array(data_dict[i])[:, 0]
             self.test.write(f'{len(temp_data)} - {temp_data.min()}/{temp_data.max()}/{temp_data.mean()}/{temp_data.std()}\n')
             temp_lst.append(temp_data.mean())
         temp_lst = np.array(temp_lst)
         self.test.write(f'{temp_lst.min()}/{temp_lst.max()}/{temp_lst.mean()}/{temp_lst.std()}\n\n')
-
-        key_lst = data_dict.keys()
-        key_lst = sorted(key_lst, key=lambda x: np.array(data_dict[x])[:, 0].mean())
 
         sample_set = []
         total_remain = []
