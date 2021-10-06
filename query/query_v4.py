@@ -12,7 +12,7 @@ from data.sampler import Sampler
 
 
 class Query(object):
-    def __init__(self, config):
+    def __init__(self, config, cycle):
         self.config = config
 
         self.initial_size = self.config.initial_size
@@ -35,7 +35,7 @@ class Query(object):
             elif self.config.data_name == 'cifar100':
                 self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=True, download=True, transform=self.train_transform)
-        self.test = open(f'{random.randint(100000, 999999)}.txt', 'w')
+        self.test = open(f'{cycle}.txt', 'w')
 
     def sampling(self, step_cnt, strategy, task):
         if not step_cnt:
