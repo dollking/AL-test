@@ -127,7 +127,7 @@ class AE(nn.Module):
                                       out_channels=num_hiddens,
                                       kernel_size=1,
                                       stride=1)
-        self._decoder = Decoder(embedding_dim,
+        self._decoder = Decoder(num_hiddens,
                                 num_residual_layers,
                                 num_residual_hiddens)
 
