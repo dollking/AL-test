@@ -70,8 +70,11 @@ class Query(object):
         feature_set = []
         for data in data_lst:
             feature_set.extend(list(data[1]))
+        feature_set = list(map(tuple, feature_set))
+
         feature_cnt = Counter(feature_set)
         feature_cnt = sorted(list(zip(feature_cnt.keys(), feature_cnt.values())), key=lambda x: x[1], reverse=True)
+
         features_set, _ = zip(*feature_cnt[:len(feature_cnt) // 2])
         feature_set = set(feature_set)
 
@@ -81,7 +84,7 @@ class Query(object):
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
         index = 0
-        sample_set = []
+        unlabeled_feature_set = []
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
@@ -90,11 +93,12 @@ class Query(object):
             code = tuple(map(tuple, code.cpu().tolist()))
 
             for idx in range(len(code)):
-                sample_set.append([self.unlabeled[index], len(set(code[idx]) & feature_set)])
+                tmp_code = tuple(map(tuple, code[idx]))
+                unlabeled_feature_set.append([self.unlabeled[index], len(set(tmp_code) & feature_set)])
                 index += 1
         tqdm_batch.close()
 
-        sample_set += list(np.array(sorted(sample_set, key=lambda x: x[1], reverse=True))[:sample_size, 0])
+        sample_set = list(np.array(sorted(unlabeled_feature_set, key=lambda x: x[1], reverse=True))[:sample_size, 0])
 
         if len(set(sample_set)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
