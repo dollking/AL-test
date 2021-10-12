@@ -54,37 +54,46 @@ class Query(object):
         data_lst = []
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
+            target = data[1].cuda(async=self.config.async_loading)
 
-            _, features, pred_loss = task.get_result(data)
-            pred_loss = pred_loss.cpu().numpy()
+            _, features, loss = task.get_result2(data, target)
+            loss = loss.cpu().numpy()
 
             code = strategy.get_code(data)
             code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
             code = tuple(map(tuple, code.cpu().tolist()))
 
             for idx in range(len(code)):
-                data_lst.append([pred_loss[idx], code[idx]])
+                data_lst.append([loss[idx], code[idx]])
         tqdm_batch.close()
 
-        data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)[:int(self.initial_size * 0.6)]
-        feature_set = []
-        for data in data_lst:
-            feature_set.extend(list(data[1]))
-        feature_set = list(map(tuple, feature_set))
+        data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)
 
-        feature_cnt = Counter(feature_set)
+        ############################# diversity
+        diversity_feature_set = []
+        for data in data_lst:
+            diversity_feature_set.extend(list(data[1]))
+        diversity_feature_set = set(map(tuple, diversity_feature_set))
+
+        ############################# uncertainty
+        uncertainty_feature_set = []
+        for data in data_lst[:int(self.initial_size * 0.6)]:
+            uncertainty_feature_set.extend(list(data[1]))
+        uncertainty_feature_set = list(map(tuple, uncertainty_feature_set))
+
+        feature_cnt = Counter(uncertainty_feature_set)
         feature_cnt = sorted(list(zip(feature_cnt.keys(), feature_cnt.values())), key=lambda x: x[1], reverse=True)
 
-        features_set, _ = zip(*feature_cnt[:len(feature_cnt) // 2])
-        feature_set = set(feature_set)
+        uncertainty_feature_set, _ = zip(*feature_cnt[:len(feature_cnt) // 2])
+        uncertainty_feature_set = set(uncertainty_feature_set)
 
-        ###########
+        #############################
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
         index = 0
-        unlabeled_feature_set = []
+        unlabeled_set1, unlabeled_set2 = [], []
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
@@ -94,11 +103,14 @@ class Query(object):
 
             for idx in range(len(code)):
                 tmp_code = tuple(map(tuple, code[idx]))
-                unlabeled_feature_set.append([self.unlabeled[index], len(set(tmp_code) & feature_set)])
+                unlabeled_set1.append([self.unlabeled[index], len(set(tmp_code) & uncertainty_feature_set)])
+                unlabeled_set2.append([self.unlabeled[index], len(set(tmp_code) & uncertainty_feature_set)])
                 index += 1
         tqdm_batch.close()
 
-        sample_set = list(np.array(sorted(unlabeled_feature_set, key=lambda x: x[1], reverse=True))[:sample_size, 0])
+        uncertainty_cnt = sample_size // 2
+        sample_set = list(np.array(sorted(unlabeled_set1, key=lambda x: x[1], reverse=True))[:uncertainty_cnt, 0])
+        sample_set += list(np.array(sorted(unlabeled_set2, key=lambda x: x[1]))[:sample_size - uncertainty_cnt, 0])
 
         if len(set(sample_set)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
