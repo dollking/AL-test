@@ -62,7 +62,6 @@ class Classification(object):
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.task = nn.DataParallel(self.task, device_ids=gpu_list)
-        self.loss_module = nn.DataParallel(self.loss_module, device_ids=gpu_list)
 
         self.print_train_info()
 
@@ -74,7 +73,6 @@ class Classification(object):
 
         state = {
             'task_state_dict': self.task.state_dict(),
-            'loss_state_dict': self.loss_module.state_dict(),
         }
 
         torch.save(state, tmp_name)
@@ -116,7 +114,6 @@ class Classification(object):
         tqdm_batch = tqdm(data_loader, leave=False, total=len(data_loader))
 
         self.task.train()
-        self.loss_module.train()
         avg_loss = AverageMeter()
         for curr_it, data in enumerate(tqdm_batch):
             self.task_opt.zero_grad()
