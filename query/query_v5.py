@@ -53,13 +53,13 @@ class Query(object):
 
         data_lst = []
         for curr_it, data in enumerate(tqdm_batch):
-            data = data[0].cuda(async=self.config.async_loading)
-            target = data[1].cuda(async=self.config.async_loading)
+            inputs = data[0].cuda(async=self.config.async_loading)
+            targets = data[1].cuda(async=self.config.async_loading)
 
-            _, features, loss = task.get_result2(data, target)
+            _, features, loss = task.get_result2(inputs, targets)
             loss = loss.cpu().numpy()
 
-            code = strategy.get_code(data)
+            code = strategy.get_code(inputs)
             code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
             code = tuple(map(tuple, code.cpu().tolist()))
 
@@ -95,16 +95,16 @@ class Query(object):
         index = 0
         unlabeled_set1, unlabeled_set2 = [], []
         for curr_it, data in enumerate(tqdm_batch):
-            data = data[0].cuda(async=self.config.async_loading)
+            inputs = data[0].cuda(async=self.config.async_loading)
 
-            code = strategy.get_code(data)
+            code = strategy.get_code(inputs)
             code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
             code = tuple(map(tuple, code.cpu().tolist()))
 
             for idx in range(len(code)):
                 tmp_code = tuple(map(tuple, code[idx]))
                 unlabeled_set1.append([self.unlabeled[index], len(set(tmp_code) & uncertainty_feature_set)])
-                unlabeled_set2.append([self.unlabeled[index], len(set(tmp_code) & uncertainty_feature_set)])
+                unlabeled_set2.append([self.unlabeled[index], len(set(tmp_code) & diversity_feature_set)])
                 index += 1
         tqdm_batch.close()
 
