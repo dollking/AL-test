@@ -189,16 +189,3 @@ class ClassificationWithLoss(object):
             pred_loss = pred_loss.view([-1, ])
 
         return out, features, pred_loss
-
-    def get_result2(self, inputs, targets):
-        self.task.eval()
-        self.loss_module.eval()
-        with torch.no_grad():
-            inputs = inputs.cuda(async=self.config.async_loading)
-
-            out, features = self.task(inputs)
-
-            loss = self.loss(out, targets, 10)
-            loss = loss.view([-1, ])
-
-        return out, features, loss

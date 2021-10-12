@@ -56,7 +56,7 @@ class Query(object):
             inputs = data[0].cuda(async=self.config.async_loading)
             targets = data[1].cuda(async=self.config.async_loading)
 
-            _, features, loss = task.get_result2(inputs, targets)
+            _, features, loss = task.get_result(inputs, targets)
             loss = loss.cpu().numpy()
 
             code = strategy.get_code(inputs)
