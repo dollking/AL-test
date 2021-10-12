@@ -79,7 +79,7 @@ class Classification(object):
 
     def set_train(self):
         # define loss
-        self.loss = loss(reduction='mean').cuda()
+        self.loss = loss().cuda()
 
         # define optimizer
         self.task_opt = torch.optim.SGD(self.task.parameters(), lr=self.config.learning_rate,
@@ -122,7 +122,7 @@ class Classification(object):
             targets = data[1].cuda(async=self.config.async_loading)
 
             out, features = self.task(inputs)
-            loss = self.loss(out, targets, 10)
+            loss = torch.mean(self.loss(out, targets, 10))
 
             loss.backward()
             self.task_opt.step()
