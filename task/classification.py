@@ -79,7 +79,7 @@ class Classification(object):
 
     def set_train(self):
         # define loss
-        self.loss = loss().cuda()
+        self.loss = loss(reduction='mean').cuda()
 
         # define optimizer
         self.task_opt = torch.optim.SGD(self.task.parameters(), lr=self.config.learning_rate,

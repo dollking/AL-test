@@ -3,10 +3,10 @@ import torch.nn as nn
 
 
 class CELoss(nn.Module):
-    def __init__(self):
+    def __init__(self, reduction='none'):
         super().__init__()
 
-        self.loss = nn.CrossEntropyLoss(reduction='none')
+        self.loss = nn.CrossEntropyLoss(reduction=reduction)
 
     def forward(self, logit, target, num_classes):
         return self.loss(logit, target)
