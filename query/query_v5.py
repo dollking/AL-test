@@ -1,4 +1,5 @@
 import os
+import math
 import random
 from tqdm import tqdm
 
@@ -20,6 +21,7 @@ class Query(object):
         self.budget = self.config.budge_size
         self.labeled = []
         self.unlabeled = [i for i in range(self.config.data_size)]
+        self.code_idf = {}
 
         self.batch_size = self.config.vae_batch_size
 
@@ -36,6 +38,27 @@ class Query(object):
             elif self.config.data_name == 'cifar100':
                 self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=True, download=True, transform=self.train_transform)
+
+    def set_idf(self, strategy):
+        dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
+                                pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
+        tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
+
+        code_lst = []
+        for curr_it, data in enumerate(tqdm_batch):
+            inputs = data[0].cuda(async=self.config.async_loading)
+
+            code = strategy.get_code(inputs)
+            code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
+            code = tuple(map(tuple, code.cpu().tolist()))
+
+            for idx in range(len(code)):
+                code_lst += list(set(map(tuple, code[idx])))
+
+        code_cnt = Counter(code_lst)
+
+        for key in code_cnt:
+            self.code_idf[key] = math.log(self.config.data_size / (1 + code_cnt[key]))
 
     def sampling(self, step_cnt, strategy, task):
         if not step_cnt:
@@ -82,9 +105,11 @@ class Query(object):
         uncertainty_feature_set = list(map(tuple, uncertainty_feature_set))
 
         feature_cnt = Counter(uncertainty_feature_set)
+        for key in feature_cnt:
+            feature_cnt[key] *= self.code_idf[key]
         feature_cnt = sorted(list(zip(feature_cnt.keys(), feature_cnt.values())), key=lambda x: x[1], reverse=True)
 
-        uncertainty_feature_set, _ = zip(*feature_cnt[:len(feature_cnt) // 2])
+        uncertainty_feature_set, _ = zip(*feature_cnt[:len(feature_cnt) // 4])
         uncertainty_feature_set = set(uncertainty_feature_set)
 
         #############################
