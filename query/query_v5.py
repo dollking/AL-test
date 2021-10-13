@@ -144,6 +144,7 @@ class Query(object):
         while len(sample_set) < sample_size:
             if ordered_diversity_index[idx] not in sample_set:
                 sample_set.append(ordered_diversity_index[idx])
+            idx += 1
 
         if len(set(sample_set)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
