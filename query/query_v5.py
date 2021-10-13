@@ -138,9 +138,7 @@ class Query(object):
         sample_set = list(np.array(sorted(unlabeled_set1, key=lambda x: x[1], reverse=True))[:uncertainty_cnt, 0])
 
         idx = 0
-        ordered_diversity_index = list(
-            np.array(sorted(unlabeled_set2, key=lambda x: x[1]))[:sample_size - uncertainty_cnt, 0]
-        )
+        ordered_diversity_index = list(np.array(sorted(unlabeled_set2, key=lambda x: x[1]))[:, 0])
         while len(sample_set) < sample_size:
             if ordered_diversity_index[idx] not in sample_set:
                 sample_set.append(ordered_diversity_index[idx])
