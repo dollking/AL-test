@@ -125,10 +125,10 @@ class Query(object):
 
         if loss_first:
             tmp_set = np.array(sorted(unlabeled_set, key=lambda x: x[1]))[:sample_size * 10, :]
-            sample_set = list(sorted(tmp_set, key=lambda x: x[2])[:sample_size, 0])
+            sample_set = list(np.array(sorted(tmp_set, key=lambda x: x[2]))[:sample_size, 0])
         else:
             tmp_set = np.array(sorted(unlabeled_set, key=lambda x: x[2]))[:sample_size * 10, :]
-            sample_set = list(sorted(tmp_set, key=lambda x: x[1])[:sample_size, 0])
+            sample_set = list(np.array(sorted(tmp_set, key=lambda x: x[1]))[:sample_size, 0])
 
         if len(set(sample_set)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
