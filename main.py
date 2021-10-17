@@ -26,14 +26,14 @@ def train_strategy(cycle_cnt):
 
 
 def main(cycle_cnt, strategy):
+    config = Config()
+    query = Query(config)
+    task = Task(config)
+
     random.seed(cycle_cnt * 1000)
     np.random.seed(cycle_cnt * 1000)
     torch.manual_seed(cycle_cnt * 1000)
     torch.cuda.manual_seed_all(cycle_cnt * 1000)
-
-    config = Config()
-    query = Query(config)
-    task = Task(config)
 
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):
