@@ -12,6 +12,7 @@ class Residual(nn.Module):
             nn.Conv2d(in_channels=in_channels,
                       out_channels=num_residual_hiddens,
                       kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(num_residual_hiddens),
             nn.ReLU(True),
             nn.Conv2d(in_channels=num_residual_hiddens,
                       out_channels=num_hiddens,
@@ -56,16 +57,24 @@ class Encoder(nn.Module):
                                              num_residual_layers=num_residual_layers,
                                              num_residual_hiddens=num_residual_hiddens)
 
+        self.batch_norm1 = nn.BatchNorm2d(num_hiddens // 2)
+        self.batch_norm2 = nn.BatchNorm2d(num_hiddens)
+        self.batch_norm3 = nn.BatchNorm2d(num_hiddens)
+        self.batch_norm4 = nn.BatchNorm2d(num_hiddens)
+
     def forward(self, inputs):
         x = self._conv_1(inputs)
+        x = self.batch_norm1(x)
         x = F.relu(x)
 
         x = self._conv_2(x)
+        x = self.batch_norm2(x)
         x = F.relu(x)
 
         x = self._conv_3(x)
+        x = self.batch_norm3(x)
 
-        return self._residual_stack(x)
+        return self.batch_norm4(self._residual_stack(x))
 
 
 class Decoder(nn.Module):
@@ -92,13 +101,20 @@ class Decoder(nn.Module):
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
+        self.batch_norm1 = nn.BatchNorm2d(in_channels)
+        self.batch_norm2 = nn.BatchNorm2d(in_channels // 2)
+        self.batch_norm3 = nn.BatchNorm2d(in_channels // 4)
+
     def forward(self, inputs):
         x = self._residual_stack(inputs)
+        x = self.batch_norm1(x)
 
         x = self._conv_trans_1(x)
+        x = self.batch_norm2(x)
         x = F.relu(x)
 
         x = self._conv_trans_2(x)
+        x = self.batch_norm3(x)
         x = F.relu(x)
 
         return self._conv_trans_3(x)

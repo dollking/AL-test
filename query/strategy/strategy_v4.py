@@ -135,7 +135,7 @@ class Strategy(object):
         self.summary_writer.add_scalar("loss", avg_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
-            print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / centroid cnt: {len(centroid_set)}')
+            print(f'{self.epoch} - loss: {avg_loss.val} / best: {self.best} / code cnt: {len(centroid_set)}')
 
     def get_code(self, inputs):
         self.ae.eval()
