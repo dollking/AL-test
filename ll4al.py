@@ -12,16 +12,13 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-def main(cycle_cnt):
-
-    config = Config()
-    query = Query(config)
-    task = Task(config)
-
+def main(cycle_cnt, config, query):
     random.seed(cycle_cnt * 1000)
     np.random.seed(cycle_cnt * 1000)
     torch.manual_seed(cycle_cnt * 1000)
     torch.cuda.manual_seed_all(cycle_cnt * 1000)
+
+    task = Task(config)
 
     fp = open(f'record_{cycle_cnt}.txt', 'w')
     for step_cnt in range(config.max_cycle):
@@ -41,4 +38,7 @@ def main(cycle_cnt):
 
 if __name__ == '__main__':
     for i in range(10):
-        main(i + 1)
+        config = Config()
+        query = Query(config)
+
+        main(i + 1, config, query)
