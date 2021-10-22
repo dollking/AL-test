@@ -119,7 +119,7 @@ class Query(object):
             for idx in range(len(code)):
                 tmp_code = tuple(map(tuple, code[idx]))
                 unlabeled_set.append([self.unlabeled[index], loss[idx],
-                                      sum([1 / self.code_idf[key] for key in set(tmp_code) & diversity_feature_set])])
+                                      sum([self.code_idf[key] for key in set(tmp_code) & diversity_feature_set])])
                 index += 1
         tqdm_batch.close()
 
