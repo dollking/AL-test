@@ -93,10 +93,10 @@ class Query(object):
         data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)
 
         ############################# diversity
-        diversity_feature_set = []
+        data_code_set = []
         for data in data_lst:
-            diversity_feature_set.extend(list(data[1]))
-        diversity_feature_set = set(map(tuple, diversity_feature_set))
+            data_code_set.extend(list(data[1]))
+        data_code_set = set(map(tuple, data_code_set))
 
         #############################
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
@@ -119,7 +119,7 @@ class Query(object):
             for idx in range(len(code)):
                 tmp_code = tuple(map(tuple, code[idx]))
                 unlabeled_set.append([self.unlabeled[index], loss[idx],
-                                      sum([self.code_idf[key] for key in set(tmp_code) & diversity_feature_set])])
+                                      sum([self.code_idf[key] for key in set(tmp_code) & data_code_set])])
                 index += 1
         tqdm_batch.close()
 

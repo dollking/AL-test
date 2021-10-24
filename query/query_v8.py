@@ -21,7 +21,7 @@ class Query(object):
         self.budget = self.config.budge_size
         self.labeled = []
         self.unlabeled = [i for i in range(self.config.data_size)]
-        self.code_idf = {}
+        self.index_idf = {}
 
         self.batch_size = self.config.vae_batch_size
 
@@ -44,21 +44,20 @@ class Query(object):
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
-        code_lst = []
+        index_lst = []
         for curr_it, data in enumerate(tqdm_batch):
             inputs = data[0].cuda(async=self.config.async_loading)
 
-            code = strategy.get_code(inputs)
-            code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
-            code = tuple(map(tuple, code.cpu().tolist()))
+            indices = strategy.get_index(inputs)
+            indices = tuple(map(tuple, indices.cpu().tolist()))
 
-            for idx in range(len(code)):
-                code_lst += list(set(map(tuple, code[idx])))
+            for idx in range(len(indices)):
+                index_lst += list(set(map(tuple, indices[idx])))
 
-        code_cnt = Counter(code_lst)
+        index_cnt = Counter(index_lst)
 
-        for key in code_cnt:
-            self.code_idf[key] = math.log(self.config.data_size / (1 + code_cnt[key]))
+        for key in index_cnt:
+            self.index_idf[key] = math.log(self.config.data_size / (1 + index_cnt[key]))
 
     def sampling(self, step_cnt, strategy, task, use_labeled_cnt=False):
         if not step_cnt:
@@ -82,29 +81,28 @@ class Query(object):
             _, features, loss = task.get_result(inputs, targets)
             loss = loss.cpu().numpy()
 
-            code = strategy.get_code(inputs)
-            code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
-            code = tuple(map(tuple, code.cpu().tolist()))
+            indices = strategy.get_index(inputs)
+            indices = tuple(map(tuple, indices.cpu().tolist()))
 
-            for idx in range(len(code)):
-                data_lst.append([loss[idx], code[idx]])
+            for idx in range(len(indices)):
+                data_lst.append([loss[idx], indices[idx]])
         tqdm_batch.close()
 
         data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)
 
         #############################
-        data_code_set = []
+        data_index_set = []
         for data in data_lst:
-            data_code_set.extend(list(data[1]))
-        data_code_set = set(map(tuple, data_code_set))
+            data_index_set.extend(list(data[1]))
+        data_index_set = set(map(tuple, data_index_set))
 
         #############################
-        labeled_code_set = []
+        labeled_index_set = []
         for data in data_lst[:int(self.initial_size * 0.6)]:
-            labeled_code_set.extend(list(data[1]))
-        labeled_code_set = list(map(tuple, labeled_code_set))
+            labeled_index_set.extend(list(data[1]))
+        labeled_index_set = list(map(tuple, labeled_index_set))
 
-        labeled_code_cnt = Counter(labeled_code_set)
+        labeled_index_cnt = Counter(labeled_index_set)
 
         #############################
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
@@ -124,11 +122,11 @@ class Query(object):
                 tmp_code = tuple(map(tuple, code[idx]))
                 if use_labeled_cnt:
                     unlabeled_set.append([self.unlabeled[index],
-                                          sum([labeled_code_cnt[key] * self.code_idf[key] for key in
-                                               set(tmp_code) & data_code_set])])
+                                          sum([labeled_index_cnt[key] * self.index_idf[key] for key in
+                                               set(tmp_code) & data_index_set])])
                 else:
                     unlabeled_set.append([self.unlabeled[index],
-                                          sum([self.code_idf[key] for key in set(tmp_code) & data_code_set])])
+                                          sum([self.index_idf[key] for key in set(tmp_code) & data_index_set])])
                 index += 1
         tqdm_batch.close()
 
