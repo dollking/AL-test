@@ -106,7 +106,7 @@ class Query(object):
             indices = indices.cpu().tolist()
 
             for idx in range(len(indices)):
-                tmp_code = tuple(map(tuple, indices[idx]))
+                tmp_code = set(indices[idx])
                 unlabeled_set.append([self.unlabeled[index], loss[idx],
                                       sum([self.index_idf[key] for key in set(tmp_code) & labeled_index_set])])
                 index += 1

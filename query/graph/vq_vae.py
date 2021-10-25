@@ -159,6 +159,11 @@ class Decoder(nn.Module):
                                                 stride=2, padding=1)
 
         self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hiddens // 2,
+                                                out_channels=num_hiddens // 4,
+                                                kernel_size=4,
+                                                stride=2, padding=1)
+
+        self._conv_trans_3 = nn.ConvTranspose2d(in_channels=num_hiddens // 4,
                                                 out_channels=3,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
@@ -171,7 +176,10 @@ class Decoder(nn.Module):
         x = self._conv_trans_1(x)
         x = F.relu(x)
 
-        return self._conv_trans_2(x)
+        x = self._conv_trans_2(x)
+        x = F.relu(x)
+
+        return self._conv_trans_3(x)
 
 
 class VAE(nn.Module):
@@ -184,8 +192,8 @@ class VAE(nn.Module):
                                 num_residual_hiddens)
         self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
                                       out_channels=embedding_dim,
-                                      kernel_size=1,
-                                      stride=1)
+                                      kernel_size=3,
+                                      stride=2, padding=1)
 
         self._vq_vae = VectorQuantizerEMA(num_embeddings, embedding_dim,
                                           commitment_cost, decay)
@@ -195,8 +203,10 @@ class VAE(nn.Module):
                                 num_residual_layers,
                                 num_residual_hiddens)
 
+        self.relu = nn.ReLU(inplace=True)
+
     def forward(self, x, is_train=True):
-        z = self._encoder(x)
+        z = self.relu(self._encoder(x))
         z = self._pre_vq_conv(z)
 
         loss, quantized, perplexity, encoding_indices = self._vq_vae(z)

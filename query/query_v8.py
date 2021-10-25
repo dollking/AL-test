@@ -103,7 +103,7 @@ class Query(object):
             indices = indices.cpu().tolist()
 
             for idx in range(len(indices)):
-                tmp_indices = tuple(map(tuple, indices[idx]))
+                tmp_indices = set(indices[idx])
                 if use_labeled_cnt:
                     unlabeled_set.append([self.unlabeled[index],
                                           sum([labeled_index_cnt[key] * self.index_idf[key] for key in
