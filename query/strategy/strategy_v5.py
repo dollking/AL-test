@@ -49,8 +49,7 @@ class Strategy(object):
         self.task = resnet(self.config.num_classes).cuda()
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
                        self.config.vae_num_residual_hiddens, self.config.vae_num_embeddings,
-                       self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_distance,
-                       self.config.vae_decay).cuda()
+                       self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_decay).cuda()
 
         # define loss
         self.loss = loss().cuda()

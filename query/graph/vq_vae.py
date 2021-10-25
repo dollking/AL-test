@@ -100,7 +100,8 @@ class VectorQuantizerEMA(nn.Module):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view([inputs.size(0),])
+        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity,\
+               encoding_indices.view([-1, input_shape[1] * input_shape[2]])
 
 
 class Encoder(nn.Module):
@@ -123,8 +124,6 @@ class Encoder(nn.Module):
                                              num_hiddens=num_hiddens,
                                              num_residual_layers=num_residual_layers,
                                              num_residual_hiddens=num_residual_hiddens)
-        
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
     def forward(self, inputs):
         x = self._conv_1(inputs)
@@ -136,8 +135,6 @@ class Encoder(nn.Module):
         x = self._conv_3(x)
 
         out = self._residual_stack(x)
-
-        out = self.avg_pool(out)
 
         return out
 
@@ -179,11 +176,8 @@ class Decoder(nn.Module):
 
 class VAE(nn.Module):
     def __init__(self, num_hiddens, num_residual_layers, num_residual_hiddens,
-                 num_embeddings, embedding_dim, commitment_cost, max_distance, decay=0):
+                 num_embeddings, embedding_dim, commitment_cost, decay=0):
         super(VAE, self).__init__()
-
-        self.max_distance = max_distance
-        self.embedding_dim = embedding_dim
 
         self._encoder = Encoder(3, num_hiddens,
                                 num_residual_layers,
