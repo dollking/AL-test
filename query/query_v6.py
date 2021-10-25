@@ -74,37 +74,21 @@ class Query(object):
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.labeled))
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
-        data_lst = []
+        labeled_code_lst = []
         for curr_it, data in enumerate(tqdm_batch):
             inputs = data[0].cuda(async=self.config.async_loading)
-            targets = data[1].cuda(async=self.config.async_loading)
-
-            _, features, loss = task.get_result(inputs, targets)
-            loss = loss.cpu().numpy()
 
             code = strategy.get_code(inputs)
             code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
             code = tuple(map(tuple, code.cpu().tolist()))
 
             for idx in range(len(code)):
-                data_lst.append([loss[idx], code[idx]])
+                labeled_code_lst += code[idx]
         tqdm_batch.close()
 
-        data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)
-
         #############################
-        data_code_set = []
-        for data in data_lst:
-            data_code_set.extend(list(data[1]))
-        data_code_set = set(map(tuple, data_code_set))
-
-        #############################
-        labeled_code_set = []
-        for data in data_lst[:int(self.initial_size * 0.6)]:
-            labeled_code_set.extend(list(data[1]))
-        labeled_code_set = list(map(tuple, labeled_code_set))
-
-        labeled_code_cnt = Counter(labeled_code_set)
+        labeled_code_cnt = Counter(labeled_code_lst)
+        labeled_code_set = set(labeled_code_cnt.keys())
 
         #############################
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
@@ -125,10 +109,10 @@ class Query(object):
                 if use_labeled_cnt:
                     unlabeled_set.append([self.unlabeled[index],
                                           sum([labeled_code_cnt[key] * self.code_idf[key] for key in
-                                               set(tmp_code) & data_code_set])])
+                                               set(tmp_code) & labeled_code_set])])
                 else:
                     unlabeled_set.append([self.unlabeled[index],
-                                          sum([self.code_idf[key] for key in set(tmp_code) & data_code_set])])
+                                          sum([self.code_idf[key] for key in set(tmp_code) & labeled_code_set])])
                 index += 1
         tqdm_batch.close()
 

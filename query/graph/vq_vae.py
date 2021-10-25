@@ -143,10 +143,10 @@ class Decoder(nn.Module):
     def __init__(self, in_channels, num_hiddens, num_residual_layers, num_residual_hiddens):
         super(Decoder, self).__init__()
 
-        self._conv_1 = nn.ConvTranspose2d(in_channels=in_channels,
+        self._conv_1 = nn.Conv2d(in_channels=in_channels,
                                  out_channels=num_hiddens,
-                                 kernel_size=8,
-                                 stride=8)
+                                 kernel_size=3,
+                                 stride=1, padding=1)
 
         self._residual_stack = ResidualStack(in_channels=num_hiddens,
                                              num_hiddens=num_hiddens,

@@ -49,10 +49,10 @@ class Query(object):
             inputs = data[0].cuda(async=self.config.async_loading)
 
             indices = strategy.get_index(inputs)
-            indices = tuple(map(tuple, indices.cpu().tolist()))
+            indices = indices.cpu().tolist()
 
             for idx in range(len(indices)):
-                index_lst += list(set(map(tuple, indices[idx])))
+                index_lst += indices[idx]
 
         index_cnt = Counter(index_lst)
 
@@ -73,28 +73,20 @@ class Query(object):
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.labeled))
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
 
-        data_lst = []
+        labeled_indices = []
         for curr_it, data in enumerate(tqdm_batch):
             inputs = data[0].cuda(async=self.config.async_loading)
-            targets = data[1].cuda(async=self.config.async_loading)
-
-            _, _, loss = task.get_result2(inputs, targets)
-            loss = loss.cpu().numpy()
 
             indices = strategy.get_index(inputs)
-            indices = tuple(map(tuple, indices.cpu().tolist()))
+            indices = indices.cpu().tolist()
 
             for idx in range(len(indices)):
-                data_lst.append([loss[idx], indices[idx]])
+                labeled_indices += indices[idx]
         tqdm_batch.close()
 
-        data_lst = sorted(data_lst, key=lambda x: x[0], reverse=True)
-
-        ############################# diversity
-        data_index_set = []
-        for data in data_lst:
-            data_index_set.extend(list(data[1]))
-        data_index_set = set(map(tuple, data_index_set))
+        #############################
+        labeled_index_cnt = Counter(labeled_indices)
+        labeled_index_set = set(labeled_index_cnt.keys())
 
         #############################
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
@@ -110,14 +102,13 @@ class Query(object):
             _, _, loss = task.get_result2(inputs, targets)
             loss = loss.cpu().numpy()
 
-            code = strategy.get_code(inputs)
-            code = code.view([-1, self.config.vae_embedding_dim, code.size(2) * code.size(3)]).transpose(1, 2)
-            code = tuple(map(tuple, code.cpu().tolist()))
+            indices = strategy.get_index(inputs)
+            indices = indices.cpu().tolist()
 
-            for idx in range(len(code)):
-                tmp_code = tuple(map(tuple, code[idx]))
+            for idx in range(len(indices)):
+                tmp_code = tuple(map(tuple, indices[idx]))
                 unlabeled_set.append([self.unlabeled[index], loss[idx],
-                                      sum([self.index_idf[key] for key in set(tmp_code) & data_index_set])])
+                                      sum([self.index_idf[key] for key in set(tmp_code) & labeled_index_set])])
                 index += 1
         tqdm_batch.close()
 
