@@ -83,7 +83,7 @@ class Query(object):
             code = tuple(map(tuple, code.cpu().tolist()))
 
             for idx in range(len(code)):
-                labeled_code_lst += code[idx]
+                labeled_code_lst += list(set(map(tuple, code[idx])))
         tqdm_batch.close()
 
         #############################
