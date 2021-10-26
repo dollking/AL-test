@@ -99,9 +99,8 @@ class Query(object):
         unlabeled_set = []
         for curr_it, data in enumerate(tqdm_batch):
             inputs = data[0].cuda(async=self.config.async_loading)
-            targets = data[1].cuda(async=self.config.async_loading)
 
-            _, _, loss = task.get_result2(inputs, targets)
+            _, _, loss = task.get_result(inputs)
             loss = loss.cpu().numpy()
 
             code = strategy.get_code(inputs)
