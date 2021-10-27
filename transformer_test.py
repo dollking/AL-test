@@ -25,7 +25,7 @@ def train_strategy(cycle_cnt):
     return ae
 
 
-def main(cycle_cnt, config, query, ae):
+def main(cycle_cnt, config, ae):
     random.seed(cycle_cnt * 1000)
     np.random.seed(cycle_cnt * 1000)
     torch.manual_seed(cycle_cnt * 1000)
@@ -37,10 +37,7 @@ def main(cycle_cnt, config, query, ae):
     # train a task model
     task.run([i for i in range(50000)])
 
-
-
-    print(f'trial-{cycle_cnt} / step {step_cnt + 1}: train data count - {len(set(query.labeled))}')
-    print(f'test accuracy - {task.best_acc}')
+    trans.run(task, ae, [i for i in range(50000)])
 
 
 if __name__ == '__main__':
