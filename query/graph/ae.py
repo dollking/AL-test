@@ -174,7 +174,7 @@ class Decoder(nn.Module):
         x = self.batch_norm4(x)
         x = self.relu(x)
 
-        x = self._residual_stack1(x)
+        x = self._residual_stack2(x)
         x = self.batch_norm5(x)
         x = self.relu(x)
 
