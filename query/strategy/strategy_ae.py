@@ -120,12 +120,10 @@ class Strategy(object):
 
             data = data[0].cuda(async=self.config.async_loading)
 
-            data_recon, _ = self.ae(data)
+            recon, _ = self.ae(data)
 
             # reconstruction loss
-            recon_loss = self.loss(data_recon, data)
-
-            loss = recon_loss
+            loss = self.loss(recon, data)
 
             loss.backward()
             self.ae_opt.step()
@@ -136,7 +134,7 @@ class Strategy(object):
         self.ae_scheduler.step(avg_loss.val)
 
         self.summary_writer.add_image('image/origin', data[0], self.epoch)
-        self.summary_writer.add_image('image/recon_origin', data[0], self.epoch)
+        self.summary_writer.add_image('image/recon_origin', recon[0], self.epoch)
         self.summary_writer.add_scalar('loss', avg_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
