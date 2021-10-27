@@ -46,7 +46,7 @@ class Strategy(object):
                                               train=True, download=True, transform=self.train_transform)
 
         # define models
-        self.transformer = transformer(self.config.vae_num_embeddings).cuda()
+        self.transformer = transformer(self.config.vae_embedding_dim).cuda()
 
         # define loss
         self.loss = loss().cuda()
