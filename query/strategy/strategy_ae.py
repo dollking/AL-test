@@ -11,7 +11,6 @@ from torchvision.datasets import CIFAR100, CIFAR10
 
 from query.graph.ae import AE as ae
 from query.graph.loss import MSE as loss
-from task.graph.resnet import ResNet18 as resnet
 
 from utils.metrics import AverageMeter
 from utils.train_utils import set_logger, count_model_prameters
@@ -49,7 +48,6 @@ class Strategy(object):
                                        pin_memory=self.config.pin_memory)
 
         # define models
-        self.task = resnet(self.config.num_classes).cuda()
         self.ae = ae(self.config.vae_num_residual_layers, self.config.vae_num_residual_hiddens,
                      self.config.vae_num_embeddings).cuda()
 
@@ -75,23 +73,22 @@ class Strategy(object):
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.ae = nn.DataParallel(self.ae, device_ids=gpu_list)
-        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
 
         self.print_train_info()
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_directory),
-                                            comment='VQ-VAE')
+                                            comment='AE')
 
     def print_train_info(self):
         print("seed: ", self.manual_seed)
         print('Number of generator parameters: {}'.format(count_model_prameters(self.ae)))
 
     def save_checkpoint(self):
-        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'vae.pth.tar')
+        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_directory, 'ae.pth.tar')
 
         state = {
-            'vae_state_dict': self.ae.state_dict(),
+            'ae_state_dict': self.ae.state_dict(),
         }
 
         torch.save(state, tmp_name)
