@@ -21,7 +21,7 @@ class Transformer(nn.Module):
         self._conv_1 = nn.Conv2d(in_channels=dim * 4,
                                  out_channels=dim * 2,
                                  kernel_size=1, stride=1)
-        self._conv_2 = nn.Conv2d(in_channels=dim * 1,
+        self._conv_2 = nn.Conv2d(in_channels=dim * 2,
                                  out_channels=dim,
                                  kernel_size=1, stride=1)
         self._conv_3 = nn.Conv2d(in_channels=dim,
