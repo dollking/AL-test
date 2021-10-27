@@ -70,7 +70,6 @@ class Strategy(object):
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.transformer = nn.DataParallel(self.transformer, device_ids=gpu_list)
-        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
 
@@ -118,9 +117,12 @@ class Strategy(object):
             data = data[0].cuda(async=self.config.async_loading)
 
             _, task_features, _ = task.get_result(data)
-            ae_features = ae.get_feature(data)
+            for idx in range(len(task_features)):
+                task_features[idx] = task_features[idx].detach()
+            pre_features = self.transformer(task_features)
 
-            pre_features = self.transformer(data)
+            ae_features = ae.get_feature(data)
+            ae_features = ae_features.detach()
 
             # reconstruction loss
             loss = self.loss(pre_features, ae_features.view([-1, self.config.vae_embedding_dim]))
