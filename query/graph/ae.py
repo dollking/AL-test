@@ -63,8 +63,8 @@ class Encoder(nn.Module):
                                  kernel_size=3,
                                  stride=1, padding=1)
 
-        self._residual_stack_1 = ResidualStack(in_channels=num_hiddens // 4,
-                                               num_hiddens=num_hiddens // 4,
+        self._residual_stack_1 = ResidualStack(in_channels=num_hiddens // 2,
+                                               num_hiddens=num_hiddens // 2,
                                                num_residual_layers=num_residual_layers,
                                                num_residual_hiddens=num_residual_hiddens)
         self._residual_stack_2 = ResidualStack(in_channels=num_hiddens,
@@ -146,7 +146,7 @@ class Decoder(nn.Module):
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-        self.batch_norm1 = nn.BatchNorm2d(in_channels)
+        self.batch_norm1 = nn.BatchNorm2d(in_channels // 2)
         self.batch_norm2 = nn.BatchNorm2d(in_channels // 2)
         self.batch_norm3 = nn.BatchNorm2d(in_channels // 4)
         self.batch_norm4 = nn.BatchNorm2d(in_channels // 8)
@@ -155,8 +155,11 @@ class Decoder(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, inputs):
-        x = self._residual_stack1(inputs)
+        x = self._conv_trans_1(inputs)
         x = self.batch_norm1(x)
+
+        x = self._residual_stack1(x)
+        x = self.batch_norm2(x)
         x = self.relu(x)
 
         x = self._conv_trans_1(x)
