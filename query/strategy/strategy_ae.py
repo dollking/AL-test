@@ -49,7 +49,7 @@ class Strategy(object):
 
         # define models
         self.ae = ae(self.config.vae_num_residual_layers, self.config.vae_num_residual_hiddens,
-                     self.config.vae_num_embeddings).cuda()
+                     self.config.vae_embedding_dim).cuda()
 
         # define loss
         self.loss = loss().cuda()
