@@ -8,8 +8,8 @@ class Transformer(nn.Module):
     def __init__(self, ae_dim, num_channels=[64, 128, 256, 512], dim=128):
         super(Transformer, self).__init__()
 
-        self.dim = self.dim
-        self.ae_dim = self.ae_dim
+        self.dim = dim
+        self.ae_dim = ae_dim
 
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
 

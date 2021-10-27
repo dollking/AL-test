@@ -11,7 +11,6 @@ from torchvision.datasets import CIFAR100, CIFAR10
 
 from query.graph.transformer import Transformer as transformer
 from query.graph.loss import MSE as loss
-from task.graph.resnet import ResNet18 as resnet
 from data.sampler import Sampler
 
 from utils.metrics import AverageMeter
@@ -47,7 +46,6 @@ class Strategy(object):
                                               train=True, download=True, transform=self.train_transform)
 
         # define models
-        self.task = resnet(self.config.num_classes).cuda()
         self.transformer = transformer(self.config.vae_num_embeddings).cuda()
 
         # define loss
