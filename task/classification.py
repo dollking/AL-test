@@ -165,3 +165,12 @@ class Classification(object):
             loss = loss.view([-1, ])
 
         return out, features, loss
+
+    def get_feature(self, inputs):
+        self.task.eval()
+        with torch.no_grad():
+            inputs = inputs.cuda(async=self.config.async_loading)
+
+            out, features = self.task(inputs)
+
+        return features

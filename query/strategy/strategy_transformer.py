@@ -116,7 +116,7 @@ class Strategy(object):
 
             data = data[0].cuda(async=self.config.async_loading)
 
-            _, task_features, _ = task.get_result(data)
+            task_features = task.get_feature(data)
             for idx in range(len(task_features)):
                 task_features[idx] = task_features[idx].detach()
             pre_features = self.transformer(task_features)
@@ -135,16 +135,14 @@ class Strategy(object):
         tqdm_batch.close()
         self.transformer_scheduler.step(avg_loss.val)
 
-        self.summary_writer.add_image('image/origin', data[0], self.epoch)
-        self.summary_writer.add_image('image/recon_origin', data[0], self.epoch)
         self.summary_writer.add_scalar('loss', avg_loss.val, self.epoch)
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val}')
 
-    def get_index(self, inputs):
+    def get_feature(self, task_features):
         self.transformer.eval()
         with torch.no_grad():
-            _, _, _, indices = self.transformer(inputs)
+            features = self.transformer(task_features)
 
-        return indices
+        return features
