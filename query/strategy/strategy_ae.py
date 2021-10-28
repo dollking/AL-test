@@ -64,12 +64,6 @@ class Strategy(object):
         # initialize train counter
         self.epoch = 0
 
-        self.manual_seed = random.randint(10000, 99999)
-
-        torch.manual_seed(self.manual_seed)
-        torch.cuda.manual_seed_all(self.manual_seed)
-        random.seed(self.manual_seed)
-
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.ae = nn.DataParallel(self.ae, device_ids=gpu_list)
@@ -81,7 +75,6 @@ class Strategy(object):
                                             comment='AE')
 
     def print_train_info(self):
-        print("seed: ", self.manual_seed)
         print('Number of generator parameters: {}'.format(count_model_prameters(self.ae)))
 
     def save_checkpoint(self):
