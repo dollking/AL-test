@@ -46,7 +46,6 @@ class Strategy(object):
                                        pin_memory=self.config.pin_memory)
 
         # define models
-        self.task = resnet(self.config.num_classes).cuda()
         self.vae = vae(self.config.vae_num_hiddens, self.config.vae_num_residual_layers,
                        self.config.vae_num_residual_hiddens, self.config.vae_num_embeddings,
                        self.config.vae_embedding_dim, self.config.vae_commitment_cost, self.config.vae_decay).cuda()
@@ -64,16 +63,9 @@ class Strategy(object):
         # initialize train counter
         self.epoch = 0
 
-        self.manual_seed = random.randint(10000, 99999)
-
-        torch.manual_seed(self.manual_seed)
-        torch.cuda.manual_seed_all(self.manual_seed)
-        random.seed(self.manual_seed)
-
         # parallel setting
         gpu_list = list(range(self.config.gpu_cnt))
         self.vae = nn.DataParallel(self.vae, device_ids=gpu_list)
-        self.task = nn.DataParallel(self.task, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
 
@@ -82,7 +74,6 @@ class Strategy(object):
                                             comment='VQ-VAE')
 
     def print_train_info(self):
-        print("seed: ", self.manual_seed)
         print('Number of generator parameters: {}'.format(count_model_prameters(self.vae)))
 
     def save_checkpoint(self):
