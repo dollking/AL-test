@@ -62,7 +62,7 @@ class Query(object):
             ae_features = ae.get_feature(data)
             ae_features = ae_features.view([-1, self.config.vae_embedding_dim])
 
-            loss = torch.sum((ae_features - pre_features) ** 2)
+            loss = torch.sum((ae_features - pre_features) ** 2, dim=1)
             loss = loss.view([-1, ]).cpu().tolist()
 
             for idx in range(len(loss)):
