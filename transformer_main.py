@@ -8,7 +8,7 @@ from config import Config
 from query.query_transformer import Query
 from query.strategy.strategy_ae import Strategy as autoencoder
 from query.strategy.strategy_transformer import Strategy as transformer
-from task.classification import Classification as Task
+from task.classification_loss import ClassificationWithLoss as Task
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
