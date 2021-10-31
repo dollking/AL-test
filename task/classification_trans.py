@@ -141,7 +141,7 @@ class ClassificationWithTrans(object):
 
             pre_features = self.transformer(features)
 
-            ae_features = ae.get_feature(data)
+            ae_features = ae.get_feature(inputs)
             ae_features = ae_features.view([-1, self.config.vae_embedding_dim])
             ae_features = ae_features.detach()
 
