@@ -44,25 +44,24 @@ class Query(object):
         random.shuffle(self.unlabeled)
 
         if step_cnt:
-            subset = self.unlabeled[:sample_size * 10]
-
             dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
-                                    pin_memory=self.config.pin_memory, sampler=Sampler(subset))
+                                    pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
 
             uncertainty = torch.tensor([]).cuda()
             tqdm_batch = tqdm(dataloader, total=len(dataloader))
             for curr_it, data in enumerate(tqdm_batch):
+                targets = data[1].cuda(async=self.config.async_loading)
                 data = data[0].cuda(async=self.config.async_loading)
 
-                _, pred_loss = task.get_result(data)
+                _, _, loss = task.get_result2(data, targets)
 
-                uncertainty = torch.cat([uncertainty, pred_loss], 0)
+                uncertainty = torch.cat([uncertainty, loss], 0)
             tqdm_batch.close()
 
             uncertainty = uncertainty.cpu()
             arg = np.argsort(uncertainty)
 
-            sample_set = list(torch.tensor(subset)[arg][-sample_size:].numpy())
+            sample_set = list(torch.tensor(self.unlabeled)[arg][-sample_size:].numpy())
 
         else:
             sample_set = self.unlabeled[:sample_size]

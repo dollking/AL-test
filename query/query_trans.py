@@ -1,4 +1,5 @@
 import os
+import torch
 import random
 from tqdm import tqdm
 
@@ -35,9 +36,8 @@ class Query(object):
             elif self.config.data_name == 'cifar100':
                 self.dataset = CIFAR100(os.path.join(self.config.root_path, self.config.data_directory),
                                         train=True, download=True, transform=self.train_transform)
-        self.test = open(f'{random.randint(100000, 999999)}.txt', 'w')
 
-    def sampling(self, step_cnt, strategy, task):
+    def sampling(self, step_cnt, task, ae):
         if not step_cnt:
             random.shuffle(self.unlabeled)
             self.labeled = self.unlabeled[:self.initial_size]
@@ -47,25 +47,32 @@ class Query(object):
 
         sample_size = self.budget
 
+        # unlabeled
         dataloader = DataLoader(self.dataset, batch_size=self.batch_size,
                                 pin_memory=self.config.pin_memory, sampler=Sampler(self.unlabeled))
         tqdm_batch = tqdm(dataloader, leave=False, total=len(dataloader))
-
         index = 0
-        data_lst = []
+        sample_set = []
         for curr_it, data in enumerate(tqdm_batch):
             data = data[0].cuda(async=self.config.async_loading)
 
-            distance = task.get_distance(data)
-            distance = distance.cpu().numpy()
+            pre_features = task.get_feature(data)
 
-            for idx in range(len(distance)):
-                data_lst.append([distance[idx], self.unlabeled[index]])
+            ae_features = ae.get_feature(data)
+            ae_features = ae_features.view([-1, self.config.vae_embedding_dim])
+
+            loss = torch.sum((ae_features - pre_features) ** 2, dim=1)
+            loss = loss.cpu().tolist()
+
+            for idx in range(len(loss)):
+                sample_set.append([self.unlabeled[index], loss[idx]])
                 index += 1
+
+            sample_set.sort(key=lambda x: x[1], reverse=True)
+            sample_set = sample_set[:sample_size]
         tqdm_batch.close()
 
-        sample_set = list(np.array(sorted(data_lst, key=lambda x: x[0]))[:sample_size, 1])
-
+        sample_set = list(np.array(sample_set)[:, 0])
         if len(set(sample_set)) < sample_size:
             print('!!!!!!!!!!!!!!!! error !!!!!!!!!!!!!!!!', len(set(sample_set)))
 
