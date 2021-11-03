@@ -191,8 +191,6 @@ class AE(nn.Module):
                                 num_residual_layers,
                                 num_residual_hiddens)
 
-        self.relu = nn.ReLU(inplace=True)
-
     def forward(self, x):
         encoder_out, mu, logvar = self._encoder(x)
         x_recon = self._decoder(encoder_out.view(-1, self.embedding_dim, 1, 1))
