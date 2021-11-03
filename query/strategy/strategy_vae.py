@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR100, CIFAR10
 
-from query.graph.ae import AE as ae
+from query.graph.vae_origin import AE as ae
 from query.graph.loss import MSE as loss
 
 from utils.metrics import AverageMeter
