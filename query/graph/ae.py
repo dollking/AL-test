@@ -193,6 +193,6 @@ class AE(nn.Module):
 
     def forward(self, x):
         encoder_out = self.relu(self._encoder(x))
-        x_recon = self._decoder(encoder_out)
+        x_recon = self._decoder(encoder_out.view(-1, self.embedding_dim, 1, 1))
 
         return x_recon, encoder_out
