@@ -154,6 +154,6 @@ class AE(nn.Module):
     def forward(self, x):
         mu, logvar = self._encoder(x)
         decoder_in = self.reparameterize(mu, logvar)
-        x_recon = self._decoder(decoder_in.view(-1, self.embedding_dim, 1, 1))
+        x_recon = self._decoder(decoder_in)
 
         return x_recon, decoder_in, mu, logvar
