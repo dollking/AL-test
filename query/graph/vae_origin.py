@@ -96,8 +96,7 @@ class Encoder(nn.Module):
         x = self.relu(x)
 
         x = self._conv_4(x)
-        x = self.batch_norm5(x)
-        x = self.relu(x)  # 4 x 4
+        x = self.batch_norm5(x)  # 4 x 4
 
         x = self._residual_stack_2(x)
 
