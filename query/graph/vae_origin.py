@@ -79,11 +79,6 @@ class Encoder(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
 
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return eps * std + mu
-
     def forward(self, inputs):
         x = self._conv_1(inputs)
         x = self.batch_norm1(x)
@@ -105,13 +100,13 @@ class Encoder(nn.Module):
         x = self.relu(x)  # 4 x 4
 
         x = self._residual_stack_2(x)
-        _, c, w, h = x.size()
 
-        x_flat = x.view([-1, c * w * h])
+        x_flat = torch.flatten(x, start_dim=1)
+
         mu = self.mu_liner(x_flat)
         logvar = self.logvar_liner(x_flat)
 
-        return self.reparameterize(mu, logvar), mu, logvar
+        return mu, logvar
 
 
 class Decoder(nn.Module):
@@ -191,8 +186,14 @@ class AE(nn.Module):
                                 num_residual_layers,
                                 num_residual_hiddens)
 
-    def forward(self, x):
-        encoder_out, mu, logvar = self._encoder(x)
-        x_recon = self._decoder(encoder_out.view(-1, self.embedding_dim, 1, 1))
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return eps * std + mu
 
-        return x_recon, encoder_out, mu, logvar
+    def forward(self, x):
+        mu, logvar = self._encoder(x)
+        decoder_in = self.reparameterize(mu, logvar)
+        x_recon = self._decoder(decoder_in.view(-1, self.embedding_dim, 1, 1))
+
+        return x_recon, decoder_in, mu, logvar
