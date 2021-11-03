@@ -99,7 +99,7 @@ class Decoder(nn.Module):
 
         self._liner = nn.Linear(in_channels, 4 * 4 * in_channels)
 
-        self._conv_trans1 = nn.ConvTranspose2d(in_channels=in_channels,
+        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=in_channels,
                                                 out_channels=in_channels // 2,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
