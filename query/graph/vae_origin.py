@@ -194,7 +194,7 @@ class AE(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        encoder_out, mu, logvar = self.relu(self._encoder(x))
+        encoder_out, mu, logvar = self._encoder(x)
         x_recon = self._decoder(encoder_out)
 
         return x_recon, encoder_out, mu, logvar
