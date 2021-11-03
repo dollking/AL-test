@@ -121,7 +121,7 @@ class Decoder(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, inputs):
-        x = self._liner(inputs).view([-1, self.in_channels, 4, 4])
+        x = self._liner(inputs).view([-1, 128, 4, 4])
 
         x = self._conv_trans_1(x)
         x = self.batch_norm1(x)
