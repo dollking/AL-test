@@ -41,29 +41,29 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self._conv_1 = nn.Conv2d(in_channels=in_channels,
-                                 out_channels=num_hiddens // 4,
-                                 kernel_size=4,
+                                 out_channels=32,
+                                 kernel_size=3,
                                  stride=2, padding=1)
-        self._conv_2 = nn.Conv2d(in_channels=num_hiddens // 4,
-                                 out_channels=num_hiddens // 2,
-                                 kernel_size=4,
+        self._conv_2 = nn.Conv2d(in_channels=32,
+                                 out_channels=64,
+                                 kernel_size=3,
                                  stride=2, padding=1)
-        self._conv_3 = nn.Conv2d(in_channels=num_hiddens // 2,
-                                 out_channels=num_hiddens // 2,
+        self._conv_3 = nn.Conv2d(in_channels=64,
+                                 out_channels=64,
                                  kernel_size=3,
                                  stride=1, padding=1)
-        self._conv_4 = nn.Conv2d(in_channels=num_hiddens // 2,
-                                 out_channels=num_hiddens,
-                                 kernel_size=4,
+        self._conv_4 = nn.Conv2d(in_channels=64,
+                                 out_channels=128,
+                                 kernel_size=3,
                                  stride=2, padding=1)
 
-        self.mu_liner = nn.Linear(4 * 4 * num_hiddens, num_hiddens)
-        self.logvar_liner = nn.Linear(4 * 4 * num_hiddens, num_hiddens)
+        self.mu_liner = nn.Linear(4 * 4 * 128, num_hiddens)
+        self.logvar_liner = nn.Linear(4 * 4 * 128, num_hiddens)
 
-        self.batch_norm1 = nn.BatchNorm2d(num_hiddens // 4)
-        self.batch_norm2 = nn.BatchNorm2d(num_hiddens // 2)
-        self.batch_norm3 = nn.BatchNorm2d(num_hiddens // 2)
-        self.batch_norm4 = nn.BatchNorm2d(num_hiddens)
+        self.batch_norm1 = nn.BatchNorm2d(32)
+        self.batch_norm2 = nn.BatchNorm2d(64)
+        self.batch_norm3 = nn.BatchNorm2d(64)
+        self.batch_norm4 = nn.BatchNorm2d(128)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -97,27 +97,28 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.in_channels = in_channels
 
-        self._liner = nn.Linear(in_channels, 4 * 4 * in_channels)
+        self._liner = nn.Linear(in_channels, 4 * 4 * 128)
 
-        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=in_channels,
-                                                out_channels=in_channels // 2,
+        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=128,
+                                                out_channels=64,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-        self._conv_trans_2 = nn.ConvTranspose2d(in_channels=in_channels // 2,
-                                                out_channels=in_channels // 4,
+        self._conv_trans_2 = nn.ConvTranspose2d(in_channels=64,
+                                                out_channels=32,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-        self._conv_trans_3 = nn.ConvTranspose2d(in_channels=in_channels // 4,
+        self._conv_trans_3 = nn.ConvTranspose2d(in_channels=32,
                                                 out_channels=3,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-        self.batch_norm1 = nn.BatchNorm2d(in_channels // 2)
-        self.batch_norm2 = nn.BatchNorm2d(in_channels // 4)
+        self.batch_norm1 = nn.BatchNorm2d(64)
+        self.batch_norm2 = nn.BatchNorm2d(32)
 
         self.relu = nn.ReLU(inplace=True)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, inputs):
         x = self._liner(inputs).view([-1, self.in_channels, 4, 4])
@@ -130,7 +131,7 @@ class Decoder(nn.Module):
         x = self.batch_norm2(x)
         x = self.relu(x)
 
-        return self._conv_trans_3(x)
+        return self.sigmoid(self._conv_trans_3(x))
 
 
 class AE(nn.Module):
