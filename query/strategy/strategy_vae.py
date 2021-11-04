@@ -105,10 +105,11 @@ class Strategy(object):
         avg_loss = AverageMeter()
 
         self.ae.train()
-        last_features, last_imgs = None, None
+        last_features, last_img, last_target = None, None, None
         for curr_it, data in enumerate(tqdm_batch):
             self.ae_opt.zero_grad()
 
+            last_target = data[1].cuda(async=self.config.async_loading)
             data = data[0].cuda(async=self.config.async_loading)
 
             recon, features, mu, logvar = self.ae(data)
@@ -132,7 +133,8 @@ class Strategy(object):
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val}')
-            embedding(self.summary_writer, last_features.detach().cpu().numpy(), data.detach().cpu().numpy())
+            embedding(self.summary_writer, last_features.detach().cpu().numpy(), last_target.detach().cpu().numpy(),
+                      data.detach().cpu().numpy(), self.epoch)
 
     def get_feature(self, inputs):
         self.ae.eval()
