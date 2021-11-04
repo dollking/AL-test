@@ -142,7 +142,7 @@ class Decoder(nn.Module):
 
     def forward(self, inputs):
         x = self._liner(inputs)
-        x = x.view([-1, 4, 4, 128])
+        x = x.view([-1, 128, 4, 4])
 
         x = self._conv_trans_1(x)
         x = self.batch_norm1(x)
