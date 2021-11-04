@@ -68,8 +68,8 @@ class Encoder(nn.Module):
                                                num_residual_layers=num_residual_layers,
                                                num_residual_hiddens=channel_lst[1])
 
-        self.mu_liner = nn.Linear(4 * 4 * num_hiddens, num_hiddens)
-        self.logvar_liner = nn.Linear(4 * 4 * num_hiddens, num_hiddens)
+        self.mu_liner = nn.Linear(4 * 4 * channel_lst[2], num_hiddens)
+        self.logvar_liner = nn.Linear(4 * 4 * channel_lst[2], num_hiddens)
 
         self.batch_norm1 = nn.BatchNorm2d(channel_lst[0])
         self.batch_norm2 = nn.BatchNorm2d(channel_lst[1])
