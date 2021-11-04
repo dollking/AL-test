@@ -132,7 +132,7 @@ class Strategy(object):
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val}')
-            embedding(self.summary_writer, last_features.cpu().numpy(), data.cpu().numpy())
+            embedding(self.summary_writer, last_features.detach().cpu().numpy(), data.detach().cpu().numpy())
 
     def get_feature(self, inputs):
         self.ae.eval()
