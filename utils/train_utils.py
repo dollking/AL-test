@@ -65,3 +65,9 @@ def print_scatter(feature_set, loss_set, cycle, step, n_components=2):
     plt.scatter(features[:, 0], features[:, 1], c=loss, s=5, cmap='Reds')
 
     plt.savefig(f'{cycle}-{step}.png', dpi=300)
+
+def embedding(writer, embeddings, images, dim=2):
+    tsn_model = TSNE(n_components=dim)
+    embeddings = tsn_model.fit_transform(embeddings)
+
+    writer.add_embedding(embeddings, label_img=images)

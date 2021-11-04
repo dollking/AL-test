@@ -13,7 +13,7 @@ from query.graph.vae_origin import AE as ae
 from query.graph.loss import MSE as loss
 
 from utils.metrics import AverageMeter
-from utils.train_utils import set_logger, count_model_prameters
+from utils.train_utils import set_logger, count_model_prameters, embedding
 from tensorboardX import SummaryWriter
 
 cudnn.benchmark = True
@@ -105,12 +105,13 @@ class Strategy(object):
         avg_loss = AverageMeter()
 
         self.ae.train()
+        last_features, last_imgs = None, None
         for curr_it, data in enumerate(tqdm_batch):
             self.ae_opt.zero_grad()
 
             data = data[0].cuda(async=self.config.async_loading)
 
-            recon, _, mu, logvar = self.ae(data)
+            recon, features, mu, logvar = self.ae(data)
             kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
             # reconstruction loss
@@ -119,6 +120,7 @@ class Strategy(object):
             loss.backward()
             self.ae_opt.step()
 
+            last_features, last_imgs = features, data
             avg_loss.update(loss)
 
         tqdm_batch.close()
@@ -130,6 +132,7 @@ class Strategy(object):
 
         if self.epoch % 50 == 0:
             print(f'{self.epoch} - loss: {avg_loss.val}')
+            embedding(self.summary_writer, last_features.cpu().numpy(), data.cpu().numpy())
 
     def get_feature(self, inputs):
         self.ae.eval()
