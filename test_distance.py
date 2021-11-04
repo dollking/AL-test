@@ -6,7 +6,7 @@ from torch.backends import cudnn
 
 from config import Config
 from query.query_ll4al_test import Query
-from query.strategy.strategy_ae import Strategy as autoencoder
+from query.strategy.strategy_vae import Strategy as autoencoder
 from task.classification_loss import ClassificationWithLoss as Task
 
 torch.backends.cudnn.deterministic = True

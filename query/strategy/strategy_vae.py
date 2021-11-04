@@ -114,7 +114,7 @@ class Strategy(object):
             kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
             # reconstruction loss
-            loss = self.loss(recon, data) + (0.1 * kld_loss)
+            loss = self.loss(recon, data) + (0.001 * kld_loss)
 
             loss.backward()
             self.ae_opt.step()
