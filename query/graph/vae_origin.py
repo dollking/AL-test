@@ -114,10 +114,10 @@ class Decoder(nn.Module):
 
         self._liner = nn.Linear(in_channels, 4 * 4 * channel_lst[-1])
 
-        self._residual_stack = ResidualStack(in_channels=in_channels // 8,
-                                              num_hiddens=in_channels // 8,
+        self._residual_stack = ResidualStack(in_channels=channel_lst[-3],
+                                              num_hiddens=channel_lst[-3],
                                               num_residual_layers=num_residual_layers,
-                                              num_residual_hiddens=num_residual_hiddens)
+                                              num_residual_hiddens=channel_lst[-3] // 2)
 
         self._conv_trans_1 = nn.ConvTranspose2d(in_channels=channel_lst[-1],
                                                 out_channels=channel_lst[-2],
